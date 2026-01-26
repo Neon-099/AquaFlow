@@ -1,4 +1,4 @@
 package com.aquaflow
 
-class DeliveryPage {
+class OrderPage {
 }

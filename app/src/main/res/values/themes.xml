@@ -6,4 +6,22 @@
     </style>
 
     <style name="Theme.AquaFlow" parent="Base.Theme.AquaFlow" />
+    <style name="LabelStyle">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">12dp</item>
+        <item name="android:textColor">#BDBDBD</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <style name="InputStyle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@android:color/transparent</item>
+        <item name="android:drawablePadding">12dp</item>
+        <item name="android:paddingVertical">12dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColorHint">#E0E0E0</item>
+    </style>
 </resources>
+

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="24dp">
+
+    <View
+            android:id="@+id/lineTop"
+            android:layout_width="3dp"
+            android:layout_height="30dp"
+            android:background="#E0E0E0"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="@id/viewIconBg"
+            app:layout_constraintStart_toStartOf="@id/viewIconBg" />
+
+    <View
+            android:id="@+id/viewIconBg"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_circle_inactive"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/lineTop" />
+
+    <ImageView
+            android:id="@+id/ivStepIcon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_confirmed"
+            app:tint="#BDBDBD"
+            app:layout_constraintTop_toTopOf="@id/viewIconBg"
+            app:layout_constraintBottom_toBottomOf="@id/viewIconBg"
+            app:layout_constraintStart_toStartOf="@id/viewIconBg"
+            app:layout_constraintEnd_toEndOf="@id/viewIconBg" />
+
+    <View
+            android:id="@+id/lineBottom"
+            android:layout_width="3dp"
+            android:layout_height="30dp"
+            android:background="#E0E0E0"
+            app:layout_constraintTop_toBottomOf="@id/viewIconBg"
+            app:layout_constraintEnd_toEndOf="@id/viewIconBg"
+            app:layout_constraintStart_toStartOf="@id/viewIconBg" />
+
+    <TextView
+            android:id="@+id/tvStepTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:text="Confirmed"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#BDBDBD"
+            app:layout_constraintTop_toTopOf="@id/viewIconBg"
+            app:layout_constraintBottom_toTopOf="@id/tvStepSubtitle"
+            app:layout_constraintStart_toEndOf="@id/viewIconBg" />
+
+    <TextView
+            android:id="@+id/tvStepSubtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Order validated by system"
+            android:textColor="#BDBDBD"
+            android:textSize="14sp"
+            app:layout_constraintStart_toStartOf="@id/tvStepTitle"
+            app:layout_constraintTop_toBottomOf="@id/tvStepTitle"
+            app:layout_constraintBottom_toBottomOf="@id/viewIconBg" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

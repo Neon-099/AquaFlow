@@ -12,6 +12,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="#E3F2FD"
             android:padding="16dp">
 
         <TextView
@@ -66,7 +67,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:textAllCaps="false"
-                    app:cornerRadius="8dp" />
+                    app:cornerRadius="8dp"
+                    />
 
             <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSecondary"
@@ -76,7 +78,8 @@
                     android:layout_marginStart="12dp"
                     android:layout_weight="1"
                     android:textAllCaps="false"
-                    app:cornerRadius="8dp" />
+                    app:cornerRadius="8dp"
+                    />
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

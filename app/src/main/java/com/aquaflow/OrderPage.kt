@@ -19,6 +19,11 @@ class OrderPage : AppCompatActivity() {
     private lateinit var tvSeeAllOrders: TextView
     private lateinit var btnNewOrder: MaterialButton
 
+    private lateinit var tvOrderTitle : TextView
+    private lateinit var tvOrderTime : TextView
+    private lateinit var tvItemDetails: TextView
+    private lateinit var tvStatus : TextView
+    private lateinit var tvDeliveryTime: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,6 +54,7 @@ class OrderPage : AppCompatActivity() {
         renderRecentActivity(allRecentHistory)
         btnNewOrder.setOnClickListener {
             Toast.makeText(this, "Opening New Order Screen", Toast.LENGTH_SHORT).show()
+
         }
     }
 
@@ -58,9 +64,15 @@ class OrderPage : AppCompatActivity() {
         // LIMIT RENDER TO 5
         val limit = if (orders.size > 5) 5 else orders.size
 
+
         for (i in 0 until limit) {
+            val order = orders[i]
             val itemView = layoutInflater.inflate(R.layout.item_order_card, activeOrdersContainer, false)
             // Bind your data to itemView here (Status, buttons, etc.)
+            tvOrderTitle.text = "Order #${order.id}"
+            tvOrderTime.text = order.timeStamp // "Today, 10:30 AM"
+            tvItemDetails.text = "${order.quantity}x ${order.itemName}" // "2x 5-Gallon Slim Refill"
+            tvDeliveryTime.text = order.arrivalTime // "12-18 mins"
             activeOrdersContainer.addView(itemView)
         }
 
@@ -79,6 +91,11 @@ class OrderPage : AppCompatActivity() {
         recentActivityContainer = findViewById(R.id.recentActivityContainer)
         tvSeeAllOrders = findViewById(R.id.tvSeeAllOrders)
         btnNewOrder = findViewById(R.id.btnNewOrder)
+
+        tvOrderTitle = findViewById<TextView>(R.id.tvOrderTitle)
+        tvOrderTime = findViewById<TextView>(R.id.tvOrderDate)
+        tvStatus = findViewById<TextView>(R.id.tvStatusBadge)
+        tvDeliveryTime = findViewById<TextView>(R.id.tvArrivalTime)
     }
 
 

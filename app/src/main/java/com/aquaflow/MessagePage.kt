@@ -74,6 +74,7 @@ class MessagePage : AppCompatActivity(){
         bottomNav.selectedItemId = R.id.navigation_messages
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
+                R.id.navigation_messages -> true
                 R.id.navigation_home -> {
                     startActivity(Intent(this, HomePage::class.java))
                     true
@@ -87,7 +88,6 @@ class MessagePage : AppCompatActivity(){
                     startActivity(Intent(this, ProfilePage::class.java))
                     true
                 }
-                R.id.navigation_messages -> true
                 else -> false
             }
         }

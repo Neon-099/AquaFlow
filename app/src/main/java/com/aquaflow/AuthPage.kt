@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.util.Patterns
 import android.view.View
 import android.widget.*
+import android.text.InputType
 import androidx.appcompat.app.AppCompatActivity
 
 class AuthPage : AppCompatActivity() {
@@ -22,19 +23,30 @@ class AuthPage : AppCompatActivity() {
     private val etEmail by lazy { findViewById<EditText>(R.id.et_email) }
     private val etPassword by lazy { findViewById<EditText>(R.id.et_password) }
     private val etName by lazy { findViewById<EditText>(R.id.et_name) }
-    private val etAddress by lazy { findViewById<EditText>(R.id.et_address) }
+    private val etPhone by lazy { findViewById<EditText>(R.id.et_phone) }
+    private val spAddress by lazy { findViewById<Spinner>(R.id.sp_address) }
+    private val etConfirmPassword by lazy { findViewById<EditText>(R.id.et_confirm_password) }
+    private val ivTogglePassword by lazy { findViewById<ImageView>(R.id.iv_toggle_password) }
+    private val ivToggleConfirmPassword by lazy { findViewById<ImageView>(R.id.iv_toggle_confirm_password) }
+    private val confirmPasswordContainer by lazy { findViewById<FrameLayout>(R.id.confirm_password_container) }
 
     // Sign-up Specific Labels (for visibility toggling)
     private val signupLabels by lazy {
         listOf(
             findViewById<TextView>(R.id.label_name),
-            findViewById<TextView>(R.id.label_address),
             etName,
-            etAddress
+            findViewById<TextView>(R.id.label_phone),
+            etPhone,
+            findViewById<TextView>(R.id.label_address),
+            spAddress,
+            findViewById<TextView>(R.id.label_confirm_password),
+            confirmPasswordContainer
         )
     }
 
     private var isLoginMode = true
+    private var isPasswordVisible = false
+    private var isConfirmPasswordVisible = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,6 +60,14 @@ class AuthPage : AppCompatActivity() {
         tabLogin.setOnClickListener { toggleUIState(true) }
         tabSignup.setOnClickListener { toggleUIState(false) }
         btnSubmit.setOnClickListener { validateAndSubmit() }
+        ivTogglePassword.setOnClickListener {
+            isPasswordVisible = !isPasswordVisible
+            updatePasswordVisibility(etPassword, ivTogglePassword, isPasswordVisible)
+        }
+        ivToggleConfirmPassword.setOnClickListener {
+            isConfirmPasswordVisible = !isConfirmPasswordVisible
+            updatePasswordVisibility(etConfirmPassword, ivToggleConfirmPassword, isConfirmPasswordVisible)
+        }
     }
 
     // --- UI Rendering Logic ---
@@ -95,7 +115,17 @@ class AuthPage : AppCompatActivity() {
         // Mode-Specific Validation
         if (!isLoginMode) {
             if (etName.text.isBlank()) { etName.error = "Name is required"; return }
-            if (etAddress.text.isBlank()) { etAddress.error = "Address is required"; return }
+            if (etPhone.text.isBlank()) { etPhone.error = "Phone number is required"; return }
+            if (spAddress.selectedItemPosition == 0) {
+                Toast.makeText(this, "Please select a delivery address", Toast.LENGTH_LONG).show()
+                return
+            }
+            val confirmPassword = etConfirmPassword.text.toString().trim()
+            if (confirmPassword.isBlank()) { etConfirmPassword.error = "Confirm your password"; return }
+            if (password != confirmPassword) {
+                etConfirmPassword.error = "Passwords do not match"
+                return
+            }
         }
 
         executeNetworkRequest(email, password)
@@ -105,31 +135,67 @@ class AuthPage : AppCompatActivity() {
     private fun executeNetworkRequest(email: String, pass: String) {
         setLoading(true)
 
-        // Data Package for Backend
-        val payload = mutableMapOf("email" to email, "password" to pass)
-        if (!isLoginMode) {
-            payload["name"] = etName.text.toString()
-            payload["address"] = etAddress.text.toString()
+        if (isLoginMode) {
+            AuthApi.login(email, pass) { result ->
+                handleAuthResult(result)
+            }
+        } else {
+            val name = etName.text.toString().trim()
+            val phone = etPhone.text.toString().trim()
+            val address = spAddress.selectedItem.toString().trim()
+            AuthApi.signup(email, pass, name, address, phone) { result ->
+                handleAuthResult(result)
+            }
         }
-
-        /** * INTEGRATION TIP:
-         * This is where you will call your ViewModel or Repository.
-         * Example: authViewModel.login(payload)
-         */
-
-        // Mocking a network response
-        btnSubmit.postDelayed({
-            setLoading(false)
-            Toast.makeText(this, "Success! Backend data ready: $payload", Toast.LENGTH_LONG).show()
-            val intent = Intent(this, HomePage::class.java)
-            startActivity(intent)
-            finish()
-        }, 1500)
     }
 
     private fun setLoading(isLoading: Boolean) {
         progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         btnSubmit.isEnabled = !isLoading
         btnSubmit.text = if (isLoading) "" else (if (isLoginMode) "Log In →" else "Create Account →")
+    }
+
+    private fun handleAuthResult(result: Result<AuthResult>) {
+        runOnUiThread {
+            setLoading(false)
+            result.onSuccess { auth ->
+                saveAuth(auth)
+                Toast.makeText(this, "Welcome ${auth.userEmail}", Toast.LENGTH_LONG).show()
+                val intent = Intent(this, HomePage::class.java)
+                startActivity(intent)
+                finish()
+            }.onFailure { err ->
+                val message = err.message ?: "Authentication failed"
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun saveAuth(auth: AuthResult) {
+        val prefs = getSharedPreferences("auth", MODE_PRIVATE)
+        prefs.edit()
+            .putString("token", auth.token)
+            .putString("email", auth.userEmail)
+            .putString("userId", auth.userId)
+            .putString("name", auth.name)
+            .putString("address", auth.address)
+            .putString("phone", auth.phone)
+            .apply()
+    }
+
+    private fun updatePasswordVisibility(
+        editText: EditText,
+        toggleView: ImageView,
+        isVisible: Boolean
+    ) {
+        editText.inputType = if (isVisible) {
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+        } else {
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        editText.setSelection(editText.text.length)
+        toggleView.setImageResource(
+            if (isVisible) R.drawable.ic_visibility_off else R.drawable.ic_visibility
+        )
     }
 }

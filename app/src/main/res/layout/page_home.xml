@@ -40,6 +40,8 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/headerBackground" />
 
+
+
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardOrder"
         android:layout_width="match_parent"
@@ -165,6 +167,8 @@
             app:strokeColor="#90CAF9" />
     </LinearLayout>
 
+
+
     <TextView
         android:id="@+id/tvRecentActivityLabel"
         android:layout_width="wrap_content"
@@ -178,32 +182,41 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/actionButtonsContainer" />
 
-    <LinearLayout
-        android:id="@+id/recentActivityContainer"
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingHorizontal="16dp"
-        android:paddingBottom="100dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
         app:layout_constraintTop_toBottomOf="@id/tvRecentActivityLabel"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintBottom_toTopOf="@id/bottomNavigation">
 
-    <TextView
-        android:id="@+id/btnSeeMore"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:padding="12dp"
-        android:text="See More"
-        android:textColor="#1E88E5"
-        android:textStyle="bold"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/recentActivityContainer"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="100dp">
 
-<!--    <com.google.android.material.bottomnavigation.BottomNavigationView-->
+            <LinearLayout
+                android:id="@+id/recentActivityContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <TextView
+                android:id="@+id/btnSeeMore"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:padding="12dp"
+                android:text="See More"
+                android:textColor="#1E88E5"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+
+    <!--    <com.google.android.material.bottomnavigation.BottomNavigationView-->
 <!--            android:id="@+id/bottomNavigation"-->
 <!--            android:layout_width="match_parent"-->
 <!--            android:layout_height="0dp"-->

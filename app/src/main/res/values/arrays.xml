@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="address_options">
+        <item>Select delivery area</item>
+        <item>Downtown</item>
+        <item>Uptown</item>
+        <item>Riverside</item>
+        <item>West End</item>
+        <item>Campus</item>
+    </string-array>
+</resources>

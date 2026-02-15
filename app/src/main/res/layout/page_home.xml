@@ -2,239 +2,344 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:background="#FFFFFF">
+    android:background="@color/background">
 
+    <!-- Header Section with Gradient Background -->
     <View
         android:id="@+id/headerBackground"
         android:layout_width="match_parent"
-        android:layout_height="80dp"
-        android:background="#1E88E5"
+        android:layout_height="200dp"
+        android:background="@drawable/bg_header_gradient"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/tvHome"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Home"
-        android:textColor="#FFFFFF"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="@id/headerBackground"
-        app:layout_constraintEnd_toEndOf="parent"
+    <!-- Profile Avatar -->
+    <ImageView
+        android:id="@+id/ivProfileAvatar"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="56dp"
+        android:background="@drawable/bg_circle_white"
+        android:padding="8dp"
+        android:src="@drawable/ic_profile_default"
+        app:tint="@color/primary"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/headerBackground" />
+        app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- Greeting Text -->
     <TextView
         android:id="@+id/tvGreeting"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="24dp"
-        tools:text="Hi, User"
-        android:textColor="#1E88E5"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="12dp"
+        android:textColor="@color/text_white"
         android:textSize="28sp"
         android:textStyle="bold"
+        android:fontFamily="sans-serif"
+        tools:text="Hi, Emman"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/headerBackground" />
+        app:layout_constraintTop_toBottomOf="@id/ivProfileAvatar" />
 
-
-
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/cardOrder"
-        android:layout_width="match_parent"
-        android:layout_height="250dp"
-        android:layout_margin="16dp"
-        app:cardBackgroundColor="#E3F2FD"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="0dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvGreeting">
-
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:padding="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Current Order"
-                android:textColor="#757575"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <TextView
-                android:id="@+id/tvStatusTag"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_blue_tag"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="4dp"
-                android:textColor="#FFFFFF"
-                android:textSize="12sp"
-                android:visibility="gone"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <TextView
-                android:id="@+id/tvOrderDetails"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                tools:text="Quantity x Item Name"
-                android:textColor="#9E9E9E"
-                app:layout_constraintBottom_toTopOf="@id/statusBox"
-                app:layout_constraintStart_toStartOf="parent" />
-
-            <LinearLayout
-                android:id="@+id/statusBox"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:background="@drawable/bg_arrival_white"
-                android:padding="12dp"
-                android:visibility="gone"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent">
-
-                <ImageView
-                    android:id="@+id/ivClockIcon"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:src="@drawable/ic_clock"
-                    app:tint="#1E88E5" />
-
-                <TextView
-                    android:id="@+id/tvArrivalIn"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:textColor="#1E88E5"
-                    tools:text="Arriving in 12-18 mins" />
-            </LinearLayout>
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-    <LinearLayout
-        android:id="@+id/actionButtonsContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingHorizontal="16dp"
-        android:layout_marginTop="24dp"
-        app:layout_constraintTop_toBottomOf="@id/cardOrder"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnTrackDelivery"
-            android:visibility="gone"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="0dp"
-            android:layout_height="60dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:text="Track Delivery"
-            android:textAllCaps="false"
-            android:textColor="#90CAF9"
-            app:cornerRadius="8dp"
-            app:icon="@drawable/ic_map"
-            app:iconTint="#90CAF9"
-            app:strokeColor="#90CAF9" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnMessageStation"
-            android:visibility="gone"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="0dp"
-            android:layout_height="60dp"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:text="Message Station"
-            android:textAllCaps="false"
-            android:textColor="#90CAF9"
-            app:cornerRadius="8dp"
-            app:icon="@drawable/ic_chat"
-            app:iconTint="#90CAF9"
-            app:strokeColor="#90CAF9" />
-    </LinearLayout>
-
-
-
+    <!-- Subtitle Text -->
     <TextView
-        android:id="@+id/tvRecentActivityLabel"
+        android:id="@+id/tvSubtitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="24dp"
-        android:layout_marginTop="24dp"
-        android:text="Recent Activity"
-        android:textColor="#757575"
-        android:textSize="18sp"
-        android:textStyle="bold"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="4dp"
+        android:text="Welcome back"
+        android:textColor="@color/text_white"
+        android:textSize="14sp"
+        android:alpha="0.85"
+        android:fontFamily="sans-serif"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/actionButtonsContainer" />
+        app:layout_constraintTop_toBottomOf="@id/tvGreeting" />
 
+    <!-- ScrollView for Main Content -->
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:fillViewport="true"
-        app:layout_constraintTop_toBottomOf="@id/tvRecentActivityLabel"
+        app:layout_constraintTop_toBottomOf="@id/headerBackground"
         app:layout_constraintBottom_toTopOf="@id/bottomNavigation">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="16dp"
             android:paddingBottom="100dp">
 
+            <!-- Current Order Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardOrder"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="24dp"
+                app:cardBackgroundColor="@color/surface_white"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="8dp"
+                app:strokeWidth="0dp">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="24dp"
+                    android:minHeight="200dp">
+
+                    <!-- Order Title -->
+                    <TextView
+                        android:id="@+id/tvOrderTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Current Order"
+                        android:textColor="@color/text_primary"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:fontFamily="sans-serif-medium"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <!-- Status Chip -->
+                    <TextView
+                        android:id="@+id/tvStatusTag"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:background="@drawable/bg_status_chip"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="6dp"
+                        android:textColor="@color/text_white"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:fontFamily="sans-serif-medium"
+                        android:visibility="gone"
+                        tools:text="Out for Delivery"
+                        tools:visibility="visible"
+                        app:layout_constraintStart_toEndOf="@id/tvOrderTitle"
+                        app:layout_constraintTop_toTopOf="@id/tvOrderTitle"
+                        app:layout_constraintBottom_toBottomOf="@id/tvOrderTitle" />
+
+                    <!-- Order Number (if available) -->
+                    <TextView
+                        android:id="@+id/tvOrderNumber"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp"
+                        android:fontFamily="sans-serif"
+                        android:visibility="gone"
+                        tools:text="#123456"
+                        tools:visibility="visible"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/tvOrderTitle" />
+
+                    <!-- Order Details -->
+                    <TextView
+                        android:id="@+id/tvOrderDetails"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:fontFamily="sans-serif-medium"
+                        tools:text="2 x 5-Gallon Slim Refill"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/tvOrderNumber" />
+
+                    <!-- Status Container -->
+                    <LinearLayout
+                        android:id="@+id/statusBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:orientation="horizontal"
+                        android:background="@drawable/bg_status_container"
+                        android:padding="16dp"
+                        android:gravity="center_vertical"
+                        android:visibility="gone"
+                        tools:visibility="visible"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/tvOrderDetails"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <ImageView
+                            android:id="@+id/ivClockIcon"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_clock"
+                            app:tint="@color/primary" />
+
+                        <TextView
+                            android:id="@+id/tvArrivalIn"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:textColor="@color/primary"
+                            android:textSize="14sp"
+                            android:textStyle="medium"
+                            android:fontFamily="sans-serif-medium"
+                            tools:text="Arriving in 12-18 mins" />
+                    </LinearLayout>
+
+                    <!-- Empty State (shown when no order) -->
+                    <LinearLayout
+                        android:id="@+id/emptyStateContainer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:visibility="gone"
+                        tools:visibility="visible"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <ImageView
+                            android:layout_width="64dp"
+                            android:layout_height="64dp"
+                            android:src="@drawable/ic_droplet"
+                            app:tint="@color/text_tertiary"
+                            android:layout_marginBottom="12dp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="No active orders"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="14sp"
+                            android:fontFamily="sans-serif-medium" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Place a new order to get started"
+                            android:textColor="@color/text_tertiary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Action Buttons Container -->
+            <LinearLayout
+                android:id="@+id/actionButtonsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="24dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <!-- Track Delivery Button (Primary - Filled) -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnTrackDelivery"
+                    style="@style/Widget.MaterialComponents.Button"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:text="Track Delivery"
+                    android:textAllCaps="false"
+                    android:textColor="@color/text_white"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-medium"
+                    android:backgroundTint="@color/primary"
+                    app:cornerRadius="12dp"
+                    app:icon="@drawable/ic_map"
+                    app:iconSize="18dp"
+                    app:iconTint="@color/text_white"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp" />
+
+                <!-- Message Station Button (Secondary - Outlined) -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnMessageStation"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:text="Message Station"
+                    android:textAllCaps="false"
+                    android:textColor="@color/primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-medium"
+                    app:cornerRadius="12dp"
+                    app:strokeWidth="1.5dp"
+                    app:strokeColor="@color/primary"
+                    app:icon="@drawable/ic_chat"
+                    app:iconSize="18dp"
+                    app:iconTint="@color/primary"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp" />
+            </LinearLayout>
+
+            <!-- Recent Activity Section -->
+            <TextView
+                android:id="@+id/tvRecentActivityLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="32dp"
+                android:text="RECENT ACTIVITY"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.1"
+                android:textAllCaps="true" />
+
+            <!-- Recent Activity Container -->
             <LinearLayout
                 android:id="@+id/recentActivityContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" />
+                android:orientation="vertical"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="16dp" />
 
+            <!-- See More Button -->
             <TextView
                 android:id="@+id/btnSeeMore"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
+                android:layout_marginTop="16dp"
                 android:padding="12dp"
                 android:text="See More"
-                android:textColor="#1E88E5"
+                android:textColor="@color/primary"
+                android:textSize="14sp"
                 android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"
                 android:visibility="gone" />
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-
-    <!--    <com.google.android.material.bottomnavigation.BottomNavigationView-->
-<!--            android:id="@+id/bottomNavigation"-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="0dp"-->
-<!--            android:layout_gravity="bottom"-->
-<!--            android:background="#FFFFFF"-->
-<!--            app:itemIconTint="@color/nav_item_color"-->
-<!--            app:itemTextColor="@color/nav_item_color"-->
-<!--            app:menu="@menu/bottom_nav_menu" />-->
-
+    <!-- Bottom Navigation -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_gravity="bottom"
-        android:background="#FFFFFF"
+        android:background="@color/surface_white"
         app:itemIconTint="@color/nav_item_color"
         app:itemTextColor="@color/nav_item_color"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:menu="@menu/bottom_nav_menu" />
+        app:menu="@menu/bottom_nav_menu"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

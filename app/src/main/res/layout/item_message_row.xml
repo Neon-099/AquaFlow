@@ -1,22 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?attr/selectableItemBackground"
         android:clickable="true"
         android:focusable="true"
-        android:padding="16dp">
+        android:padding="18dp">
 
     <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/ivSenderProfile"
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:scaleType="centerCrop"
-            android:src="@drawable/ic_profile"
+            app:shapeAppearanceOverlay="@drawable/circle_frame"
+            app:strokeColor="@color/border_light"
+            app:strokeWidth="2dp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:shapeAppearanceOverlay="@drawable/circle_frame" />
+            app:layout_constraintTop_toTopOf="parent" />
 
     <LinearLayout
             android:id="@+id/nameContainer"
@@ -35,24 +38,41 @@
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="Mike (Rider)"
-                android:textColor="#333333"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"
+                tools:text="Mike (Rider)" />
 
         <TextView
                 android:id="@+id/tvOrderBadge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:background="@drawable/bg_badge_blue"
-                android:paddingHorizontal="6dp"
-                android:paddingVertical="2dp"
-                android:text="Order #2841"
-                android:textColor="#1E88E5"
+                android:background="@drawable/bg_status_chip"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="4dp"
+                android:textColor="@color/text_white"
                 android:textSize="10sp"
-                android:visibility="gone" />
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"
+                android:visibility="gone"
+                tools:text="Order #2841"
+                tools:visibility="visible" />
     </LinearLayout>
+
+    <TextView
+            android:id="@+id/tvMetaLine"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/text_tertiary"
+            android:textSize="11sp"
+            android:fontFamily="sans-serif"
+            tools:text="Assigned Rider • OUT_FOR_DELIVERY"
+            app:layout_constraintStart_toStartOf="@id/nameContainer"
+            app:layout_constraintEnd_toEndOf="@id/nameContainer"
+            app:layout_constraintTop_toBottomOf="@id/nameContainer" />
 
     <TextView
             android:id="@+id/tvMessagePreview"
@@ -61,20 +81,22 @@
             android:layout_marginTop="4dp"
             android:ellipsize="end"
             android:maxLines="1"
-            android:text="I've arrived at the gate."
-            android:textColor="#757575"
+            android:textColor="@color/text_secondary"
             android:textSize="14sp"
+            android:fontFamily="sans-serif"
+            tools:text="I've arrived at the gate."
             app:layout_constraintEnd_toEndOf="@id/nameContainer"
             app:layout_constraintStart_toStartOf="@id/nameContainer"
-            app:layout_constraintTop_toBottomOf="@id/nameContainer" />
+            app:layout_constraintTop_toBottomOf="@id/tvMetaLine" />
 
     <TextView
             android:id="@+id/tvMessageTime"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="2m ago"
-            android:textColor="#BDBDBD"
+            android:textColor="@color/text_tertiary"
             android:textSize="12sp"
+            android:fontFamily="sans-serif"
+            tools:text="2m ago"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -92,7 +114,8 @@
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginTop="16dp"
-            android:background="#F5F5F5"
-            app:layout_constraintTop_toBottomOf="@id/ivSenderProfile" />
+            android:background="@color/border_light"
+            app:layout_constraintTop_toBottomOf="@id/ivSenderProfile"
+            tools:layout_editor_absoluteX="18dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

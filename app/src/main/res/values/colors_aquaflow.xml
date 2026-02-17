@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Brand Colors -->
+    <color name="primary">#4682B4</color>
+    <color name="primary_light">#6D9CCB</color>
+    <color name="primary_dark">#3A6D96</color>
+    <color name="secondary">#00563B</color>
+    
+    <!-- Accent Colors -->
+    <color name="accent_light">#B2FFFF</color>
+    <color name="accent_blue_slate">#536878</color>
+    
+    <!-- Background Colors -->
+    <color name="background">#F8FAFB</color>
+    <color name="surface_white">#FFFFFF</color>
+    <color name="surface_light_blue">#F0F7FF</color>
+    <color name="surface_light_green">#F0F7F0</color>
+    <color name="surface_light_orange">#FFF8F0</color>
+    <color name="surface_light_pink">#FFF0F7</color>
+    
+    <!-- Text Colors -->
+    <color name="text_primary">#1A1A1A</color>
+    <color name="text_secondary">#8A9BA8</color>
+    <color name="text_tertiary">#C4CDD5</color>
+    <color name="text_white">#FFFFFF</color>
+    
+    <!-- Border Colors -->
+    <color name="border_light">#E8ECF0</color>
+    <color name="border_medium">#C4CDD5</color>
+    <color name="border_dark">#8A9BA8</color>
+    
+    <!-- Semantic Colors -->
+    <color name="success">#10B981</color>
+    <color name="success_light">#D1FAE5</color>
+    <color name="warning">#D97706</color>
+    <color name="warning_light">#FEF3C7</color>
+    <color name="error">#DC2626</color>
+    <color name="error_light">#FEE2E2</color>
+    <color name="info">#4682B4</color>
+    <color name="info_light">#F0F7FF</color>
+    
+    <!-- Quick Action Colors -->
+    <color name="quick_action_blue">#4682B4</color>
+    <color name="quick_action_green">#00563B</color>
+    <color name="quick_action_orange">#D97706</color>
+    <color name="quick_action_pink">#BE185D</color>
+    
+    <!-- Transparent Overlays -->
+    <color name="overlay_light">#F0FFFFFF</color>
+    <color name="overlay_dark">#CC000000</color>
+</resources>

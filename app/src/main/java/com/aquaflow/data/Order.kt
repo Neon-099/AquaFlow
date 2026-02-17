@@ -12,8 +12,9 @@ data class Order(
 enum class OrderStatus {
     PENDING,
     CONFIRMED,
-    GALLON_PICKUP,
+    PICKED_UP,
     OUT_FOR_DELIVERY,
+    DELIVERED,
     PENDING_PAYMENT,
     COMPLETED,
     CANCELLED

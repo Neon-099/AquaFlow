@@ -1,7 +1,6 @@
 package com.aquaflow.data
 
 
-import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,6 +8,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import com.aquaflow.R
+import com.aquaflow.data.Order
+import com.aquaflow.data.OrderStatus
+import com.aquaflow.ui.OrderStatusBadgeMapper
 import com.google.android.material.button.MaterialButton
 
 class OrderAdapter(private val orders: List<Order>) : RecyclerView.Adapter<OrderAdapter.OrderViewHolder>() {
@@ -28,67 +30,29 @@ class OrderAdapter(private val orders: List<Order>) : RecyclerView.Adapter<Order
         holder.tvDate.text = order.timeStamp
         holder.tvTitle.text = "${order.quantity}× ${order.itemName}"
         holder.tvArrival.text = "Arriving in ${order.arrivalTime}"
+        OrderStatusBadgeMapper.apply(holder.tvBadge, order.status)
 
         // --- CONDITIONAL RENDERING (SAME LOGIC AS HOME) ---
         when (order.status) {
             OrderStatus.PENDING -> {
-                holder.tvBadge.text = "Pending"
-                holder.tvBadge.setBackgroundResource(R.drawable.bg_badge_orange_light)
-                holder.tvBadge.setTextColor(Color.parseColor("#FFB74D"))
-
-                // One Button visible (View Details)
-                holder.btnPrimary.text = "View details"
+                holder.btnPrimary.visibility = View.VISIBLE
+                holder.btnPrimary.text = "Track"
                 holder.btnSecondary.visibility = View.GONE
             }
-            OrderStatus.CONFIRMED -> {
-                holder.tvBadge.text = "Ordered"
-                holder.tvBadge.setBackgroundResource(R.drawable.bg_badge_blue)
-                holder.tvBadge.setTextColor(Color.parseColor("#757575"))
-
-                //BUTTONS VISIBLE
+            OrderStatus.CONFIRMED,
+            OrderStatus.PICKED_UP,
+            OrderStatus.OUT_FOR_DELIVERY,
+            OrderStatus.DELIVERED,
+            OrderStatus.PENDING_PAYMENT -> {
+                holder.btnPrimary.visibility = View.VISIBLE
                 holder.btnPrimary.text = "Track"
                 holder.btnSecondary.visibility = View.VISIBLE
                 holder.btnSecondary.text = "Message"
             }
-            OrderStatus.OUT_FOR_DELIVERY -> {
-                holder.tvBadge.text = "Out for delivery"
-                holder.tvBadge.setBackgroundResource(R.drawable.bg_badge_blue_solid)
-                holder.tvBadge.setTextColor(Color.parseColor("#1E88E5"))
-
-                //BUTTONS VISIBLE
-                holder.btnPrimary.text = "Track"
-                holder.btnSecondary.visibility = View.VISIBLE
-                holder.btnSecondary.text = "Message"
-            }
-            OrderStatus.GALLON_PICKUP -> {
-                holder.tvBadge.text = "Picking up"
-                holder.tvBadge.setBackgroundResource(R.drawable.bg_badge_orange_light)
-                holder.tvBadge.setTextColor(Color.parseColor("#FFB74D"))
-
-                //BUTTONS VISIBLE
-                holder.btnPrimary.text = "Track"
-                holder.btnSecondary.visibility = View.VISIBLE
-                holder.btnSecondary.text = "Message"
-            }
-            OrderStatus.COMPLETED -> {
-                holder.tvBadge.text = "Completed"
-                holder.tvBadge.setBackgroundResource(R.drawable.bg_badge_green)
-                holder.tvBadge.setTextColor(Color.parseColor("#FFB74D"))
-
-                // One Button visible (View Details)
-                holder.btnPrimary.text = "View details"
-                holder.btnSecondary.visibility = View.GONE
-            }
+            OrderStatus.COMPLETED,
             OrderStatus.CANCELLED -> {
-                holder.tvBadge.text = "Cancelled"
-                holder.tvBadge.setBackgroundResource(R.drawable.bg_badge_red)
-                holder.tvBadge.setTextColor(Color.parseColor("#FFB74D"))
-
-                // One Button visible (View Details)
-                holder.btnPrimary.text = "View details"
+                holder.btnPrimary.visibility = View.GONE
                 holder.btnSecondary.visibility = View.GONE
-            }
-            else -> {
             }
         }
 

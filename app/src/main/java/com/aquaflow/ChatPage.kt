@@ -1,79 +1,165 @@
 package com.aquaflow
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.view.View
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-
-data class ChatMessage(
-    val message: String,
-    val time: String,
-    val isSender: Boolean,
-    val isDateSeparator: Boolean = false
-)
+import androidx.appcompat.app.AppCompatActivity
+import com.aquaflow.utils.ChatApi
+import com.aquaflow.utils.ConversationMessage
+import com.aquaflow.utils.OrderApi
 
 class ChatPage : AppCompatActivity() {
 
     private lateinit var chatContainer: LinearLayout
     private lateinit var etMessage: EditText
     private lateinit var btnSend: ImageButton
+    private lateinit var btnBack: ImageButton
+    private lateinit var tvToolbarName: TextView
+    private lateinit var tvStatusSubtitle: TextView
+    private lateinit var orderContextCard: View
+    private lateinit var tvOrderContextTitle: TextView
+    private lateinit var tvOrderContextStatus: TextView
+    private lateinit var loadingOverlay: View
+
+    private var conversationId: String = ""
+    private var orderId: String? = null
+    private var myUserId: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat_conversation)
 
-        // Set Toolbar Names from Intent (Not hardcoded)
-        val senderName = intent.getStringExtra("SENDER_NAME") ?: "Support"
-        findViewById<TextView>(R.id.tvToolbarName).text = senderName
+        conversationId = intent.getStringExtra("CONVERSATION_ID").orEmpty()
+        orderId = intent.getStringExtra("ORDER_ID")
+        myUserId = getSharedPreferences("auth", MODE_PRIVATE).getString("userId", "").orEmpty()
 
+        tvToolbarName = findViewById(R.id.tvToolbarName)
+        tvStatusSubtitle = findViewById(R.id.tvStatusSubtitle)
         chatContainer = findViewById(R.id.chatContainer)
         etMessage = findViewById(R.id.etMessageInput)
         btnSend = findViewById(R.id.btnSend)
+        btnBack = findViewById(R.id.btnBack)
 
-        // Initial Data
-        val messages = listOf(
-            ChatMessage("Today, 10:15 AM", "", false, true),
-            ChatMessage("Hi, I won't be home at 1 PM. Can we move the delivery to 2 PM instead?", "10:15 AM", true),
-            ChatMessage("11:30 AM", "", false, true),
-            ChatMessage("Sure! I've checked with the rider.", "11:30 AM", false),
-            ChatMessage("Your refill schedule has been updated. The rider will arrive between 2:00 PM-2:30 PM.", "11:31 AM", false)
-        )
+        orderContextCard = findViewById(R.id.orderContextCard)
+        tvOrderContextTitle = findViewById(R.id.tvOrderContextTitle)
+        tvOrderContextStatus = findViewById(R.id.tvOrderContextStatus)
+        loadingOverlay = findViewById(R.id.loadingOverlay)
 
-        messages.forEach { addMessageToUI(it) }
+        tvToolbarName.text = intent.getStringExtra("SENDER_NAME") ?: "Chat"
+        tvStatusSubtitle.text = intent.getStringExtra("COUNTERPARTY_LABEL") ?: "Conversation"
+
+        btnBack.setOnClickListener { finish() }
+
+        renderOrderContext()
+        loadMessages()
 
         btnSend.setOnClickListener {
-            val text = etMessage.text.toString()
-            if (text.isNotEmpty()) {
-                val currentTime = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date())
-                addMessageToUI(ChatMessage(text, currentTime, true))
-                etMessage.text.clear()
+            val message = etMessage.text.toString().trim()
+            if (message.isEmpty() || conversationId.isBlank()) return@setOnClickListener
+            sendMessage(message)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        markSeen()
+    }
+
+    private fun renderOrderContext() {
+        val oid = orderId
+        if (oid.isNullOrBlank()) {
+            orderContextCard.visibility = View.GONE
+            return
+        }
+
+        orderContextCard.visibility = View.VISIBLE
+        tvOrderContextTitle.text = "Order #${oid.takeLast(6)}"
+
+        val token = getSharedPreferences("auth", MODE_PRIVATE).getString("token", null)
+        if (token.isNullOrBlank()) {
+            tvOrderContextStatus.text = "Order context unavailable"
+            return
+        }
+
+        OrderApi.getOrderById(token, oid) { result ->
+            runOnUiThread {
+                result.onSuccess { details ->
+                    val code = details.order.orderCode ?: oid.takeLast(6)
+                    tvOrderContextTitle.text = "Order #$code"
+                    tvOrderContextStatus.text = details.order.status.replace("_", " ")
+                }.onFailure {
+                    tvOrderContextStatus.text = (intent.getStringExtra("ORDER_STATUS")
+                        ?: "Status unavailable").replace("_", " ")
+                }
             }
         }
     }
 
-    private fun addMessageToUI(chat: ChatMessage) {
-        val layoutId = when {
-            chat.isDateSeparator -> R.layout.item_chat_date
-            chat.isSender -> R.layout.item_chat_right
-            else -> R.layout.item_chat_left
+    private fun loadMessages() {
+        setLoading(true)
+        val token = getSharedPreferences("auth", MODE_PRIVATE).getString("token", null)
+        if (token.isNullOrBlank() || conversationId.isBlank()) {
+            setLoading(false)
+            return
         }
 
+        ChatApi.getMessages(token, conversationId) { result ->
+            runOnUiThread {
+                result.onSuccess { messages ->
+                    chatContainer.removeAllViews()
+                    messages.forEach { addMessageToUI(it) }
+                    markSeen()
+                    setLoading(false)
+                }.onFailure {
+                    setLoading(false)
+                }
+            }
+        }
+    }
+
+    private fun sendMessage(message: String) {
+        val token = getSharedPreferences("auth", MODE_PRIVATE).getString("token", null)
+        if (token.isNullOrBlank()) return
+
+        ChatApi.sendMessage(token, conversationId, message) { result ->
+            runOnUiThread {
+                result.onSuccess { saved ->
+                    etMessage.text.clear()
+                    addMessageToUI(saved)
+                    markSeen()
+                }.onFailure {
+                    // keep silent for now
+                }
+            }
+        }
+    }
+
+    private fun markSeen() {
+        val token = getSharedPreferences("auth", MODE_PRIVATE).getString("token", null)
+        if (token.isNullOrBlank() || conversationId.isBlank()) return
+        ChatApi.markSeen(token, conversationId) { }
+    }
+
+    private fun addMessageToUI(chat: ConversationMessage) {
+        val isSender = chat.senderId == myUserId
+        val layoutId = if (isSender) R.layout.item_chat_right else R.layout.item_chat_left
         val view = layoutInflater.inflate(layoutId, chatContainer, false)
 
-        if (chat.isDateSeparator) {
-            view.findViewById<TextView>(R.id.tvChatDate).text = chat.message
+        if (isSender) {
+            view.findViewById<TextView>(R.id.tvMessageRight).text = chat.message
+            view.findViewById<TextView>(R.id.tvTimeRight).text = chat.timestamp ?: ""
         } else {
-            val tvMessage = view.findViewById<TextView>(if (chat.isSender) R.id.tvMessageRight else R.id.tvMessageLeft)
-            val tvTime = view.findViewById<TextView>(if (chat.isSender) R.id.tvTimeRight else R.id.tvTimeLeft)
-            tvMessage.text = chat.message
-            tvTime.text = chat.time
+            view.findViewById<TextView>(R.id.tvMessageLeft).text = chat.message
+            view.findViewById<TextView>(R.id.tvTimeLeft).text = chat.timestamp ?: ""
         }
 
         chatContainer.addView(view)
+    }
+
+    private fun setLoading(isLoading: Boolean) {
+        loadingOverlay.visibility = if (isLoading) View.VISIBLE else View.GONE
     }
 }

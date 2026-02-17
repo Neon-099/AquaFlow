@@ -15,7 +15,7 @@
         android:theme="@style/Theme.AquaFlow"
         android:usesCleartextTraffic="true">
         <activity
-            android:name=".HomePage"
+            android:name=".AuthPage"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -23,15 +23,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-<!--        <activity-->
-<!--            android:name=".HomePage"-->
-<!--            android:exported="false" />-->
+        <activity
+            android:name=".HomePage"
+            android:exported="false" />
         <activity
             android:name=".OrderPage"
             android:exported="false" />
         <activity
             android:name=".MessagePage"
             android:exported="false" />
+        <activity
+            android:name=".ChatPage"
+            android:exported="false"/>
         <activity
             android:name=".OrderTrackingPage"
             android:exported="false" />

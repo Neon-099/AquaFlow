@@ -38,22 +38,17 @@ class ProfilePage : AppCompatActivity() {
 
         // 4. Logout Logic
         findViewById<MaterialButton>(R.id.btnLogout).setOnClickListener {
-            Toast.makeText(this, "Logging out...", Toast.LENGTH_SHORT).show()
-            // Add your navigation to LoginActivity here
+            val prefs = getSharedPreferences("auth", MODE_PRIVATE)
+            prefs.edit().clear().apply()
+            Toast.makeText(this, "Logged out", Toast.LENGTH_SHORT).show()
+            val intent = Intent(this, AuthPage::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            finish()
         }
 
         setupBottomNavigation()
     }
-
-//    private fun bindHeader(user: UserProfile) {
-//        val tvName = findViewById<TextView>(R.id.tvUserName)
-//        val tvPhone = findViewById<TextView>(R.id.tvUserPhone)
-//        val ivProfile = findViewById<ImageView>(R.id.ivUserProfile)
-//
-//        tvName.text = user.name
-//        tvPhone.text = user.phone
-//        ivProfile.setImageResource(user.profileImageId)
-//    }
 
     private fun bindHeader(user: UserProfile) {
         val tvName = findViewById<TextView>(R.id.tvUserName)

@@ -9,6 +9,9 @@ import android.widget.*
 import android.text.InputType
 import androidx.appcompat.app.AppCompatActivity
 
+import com.aquaflow.utils.AuthApi
+import com.aquaflow.utils.AuthResult
+
 class AuthPage : AppCompatActivity() {
 
     // --- View Binding ---

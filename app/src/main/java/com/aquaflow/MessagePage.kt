@@ -1,68 +1,100 @@
 package com.aquaflow
 
 import android.content.Intent
-import android.widget.ImageView
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import android.view.View
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import com.aquaflow.utils.ChatApi
+import com.aquaflow.utils.ConversationRow
+import com.google.android.material.bottomnavigation.BottomNavigationView
 
-data class MessageThread(
-    val senderName: String,
-    val preview: String,
-    val time: String,
-    val orderNumber: String? = null,
-    val isUnread: Boolean = false,
-    val imageRes: Int = R.drawable.ic_profile
-)
-
-class MessagePage : AppCompatActivity(){
+class MessagePage : AppCompatActivity() {
     private lateinit var messagesContainer: LinearLayout
+    private lateinit var loadingOverlay: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.page_message)
 
         messagesContainer = findViewById(R.id.messagesContainer)
-
-        // MOCK DATA FROM SERVER
-        val threads = listOf(
-            MessageThread("Mike (Rider)", "I've arrived at the gate.", "2m ago", "Order #2841", true),
-            MessageThread("Water Station Support", "Your refill schedule has been updated.", "1h ago"),
-            MessageThread("John (Driver)", "Thanks! Enjoy your water.", "Yesterday"),
-            MessageThread("System Update", "Service maintenance scheduled for Sunday.", "2d ago", null, false, R.drawable.ic_notification_bell)
-        )
-
-        renderMessages(threads)
+        loadingOverlay = findViewById(R.id.loadingOverlay)
         setupBottomNav()
+        loadConversations()
     }
 
-    private fun renderMessages(data: List<MessageThread>) {
+    override fun onResume() {
+        super.onResume()
+        loadConversations()
+    }
+
+    private fun loadConversations() {
+        setLoading(true)
+        val token = getSharedPreferences("auth", MODE_PRIVATE).getString("token", null)
+        if (token.isNullOrBlank()) {
+            Toast.makeText(this, "Missing session. Please log in again.", Toast.LENGTH_LONG).show()
+            setLoading(false)
+            return
+        }
+
+        // includeArchived=false -> completed/cancelled order chats are automatically hidden (archived)
+        ChatApi.listConversations(token, includeArchived = false) { result ->
+            runOnUiThread {
+                result.onSuccess { rows ->
+                    renderMessages(rows)
+                    setLoading(false)
+                }.onFailure {
+                    Toast.makeText(this, it.message ?: "Unable to load conversations", Toast.LENGTH_LONG).show()
+                    setLoading(false)
+                }
+            }
+        }
+    }
+
+    private fun renderMessages(data: List<ConversationRow>) {
         messagesContainer.removeAllViews()
 
-        for (thread in data) {
+        for (row in data) {
             val itemView = layoutInflater.inflate(R.layout.item_message_row, messagesContainer, false)
 
-            itemView.findViewById<TextView>(R.id.tvSenderName).text = thread.senderName
-            itemView.findViewById<TextView>(R.id.tvMessagePreview).text = thread.preview
-            itemView.findViewById<TextView>(R.id.tvMessageTime).text = thread.time
-            itemView.findViewById<ImageView>(R.id.ivSenderProfile).setImageResource(thread.imageRes)
+            val tvSender = itemView.findViewById<TextView>(R.id.tvSenderName)
+            val tvPreview = itemView.findViewById<TextView>(R.id.tvMessagePreview)
+            val tvTime = itemView.findViewById<TextView>(R.id.tvMessageTime)
+            val ivProfile = itemView.findViewById<ImageView>(R.id.ivSenderProfile)
+            val tvOrderBadge = itemView.findViewById<TextView>(R.id.tvOrderBadge)
+            val tvMeta = itemView.findViewById<TextView>(R.id.tvMetaLine)
+            val dot = itemView.findViewById<View>(R.id.viewUnreadDot)
 
-            // Dynamic Order Badge
-            val badge = itemView.findViewById<TextView>(R.id.tvOrderBadge)
-            if (thread.orderNumber != null) {
-                badge.visibility = View.VISIBLE
-                badge.text = thread.orderNumber
+            val roleTag = formatRoleTag(row)
+            tvSender.text = "$roleTag: ${row.counterpartyName}"
+            tvPreview.text = row.lastMessage ?: "No messages yet"
+            tvTime.text = row.lastMessageAt ?: ""
+            ivProfile.setImageResource(R.drawable.ic_profile)
+
+            if (!row.orderId.isNullOrBlank()) {
+                tvOrderBadge.visibility = View.VISIBLE
+                tvOrderBadge.text = "Order #${row.orderId.takeLast(6)}"
+            } else {
+                tvOrderBadge.visibility = View.GONE
             }
 
-            // Dynamic Unread Indicator
-            val dot = itemView.findViewById<View>(R.id.viewUnreadDot)
-            dot.visibility = if (thread.isUnread) View.VISIBLE else View.INVISIBLE
+            val statusText = row.orderStatus?.replace("_", " ") ?: "No order"
+            val labelText = roleTag
+            tvMeta.text = statusText
+
+            dot.visibility = if (row.unreadCount > 0) View.VISIBLE else View.INVISIBLE
 
             itemView.setOnClickListener {
-                // Open Chat Activity
+                val intent = Intent(this, ChatPage::class.java)
+                intent.putExtra("CONVERSATION_ID", row.id)
+                intent.putExtra("SENDER_NAME", row.counterpartyName)
+                intent.putExtra("ORDER_ID", row.orderId)
+                intent.putExtra("ORDER_STATUS", row.orderStatus)
+                intent.putExtra("COUNTERPARTY_LABEL", row.counterpartyLabel)
+                startActivity(intent)
             }
 
             messagesContainer.addView(itemView)
@@ -76,20 +108,31 @@ class MessagePage : AppCompatActivity(){
             when (item.itemId) {
                 R.id.navigation_messages -> true
                 R.id.navigation_home -> {
-                    startActivity(Intent(this, HomePage::class.java))
-                    true
+                    startActivity(Intent(this, HomePage::class.java)); true
                 }
                 R.id.navigation_orders -> {
-                    startActivity(Intent(this, OrderPage::class.java))
-                    true
+                    startActivity(Intent(this, OrderPage::class.java)); true
                 }
                 R.id.navigation_profile -> {
-                    // Navigate to Profile
-                    startActivity(Intent(this, ProfilePage::class.java))
-                    true
+                    startActivity(Intent(this, ProfilePage::class.java)); true
                 }
                 else -> false
             }
         }
+    }
+
+    private fun formatRoleTag(row: ConversationRow): String {
+        val label = row.counterpartyLabel?.trim()?.lowercase()
+        return when {
+            label == "assigned rider" -> "Assigned Rider"
+            label == "rider" -> "Unassigned Rider"
+            label == "staff support" || row.counterpartyRole.equals("staff", true) -> "Staff"
+            row.counterpartyRole.equals("rider", true) -> "Unassigned Rider"
+            else -> "Chat"
+        }
+    }
+
+    private fun setLoading(isLoading: Boolean) {
+        loadingOverlay.visibility = if (isLoading) View.VISIBLE else View.GONE
     }
 }

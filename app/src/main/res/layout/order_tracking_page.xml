@@ -2,71 +2,90 @@
 <androidx.constraintlayout.widget.ConstraintLayout
         xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#FFFFFF">
+        android:background="@color/background">
 
     <View
-            android:id="@+id/toolbar"
+            android:id="@+id/headerBackground"
             android:layout_width="match_parent"
-            android:layout_height="60dp"
+            android:layout_height="200dp"
+            android:background="@drawable/bg_header_gradient"
             app:layout_constraintTop_toTopOf="parent" />
 
     <ImageButton
             android:id="@+id/btnBack"
             android:layout_width="48dp"
             android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_arrow_back"
-            app:layout_constraintBottom_toBottomOf="@id/toolbar"
+            android:contentDescription="Back"
+            app:tint="@color/text_white"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@id/toolbar"
-            app:tint="#1A237E"
-            android:layout_marginStart="24dp"
-            app:layout_constraintVertical_bias="1.0" />
+            app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
+            android:id="@+id/tvPageTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="56dp"
             android:text="Order Tracking"
-            android:textColor="#1A237E"
-            android:textSize="20sp"
+            android:textColor="@color/text_white"
+            android:textSize="28sp"
             android:textStyle="bold"
-            app:layout_constraintBottom_toBottomOf="@id/toolbar"
-            app:layout_constraintEnd_toEndOf="parent"
+            android:fontFamily="sans-serif"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@id/toolbar" />
+            app:layout_constraintTop_toTopOf="parent" />
 
-    <LinearLayout
+    <com.google.android.material.card.MaterialCardView
             android:id="@+id/orderHeader"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:padding="24dp"
-            app:layout_constraintTop_toBottomOf="@id/toolbar">
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="-40dp"
+            app:cardBackgroundColor="@color/surface_white"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="8dp"
+            app:strokeWidth="0dp"
+            app:layout_constraintTop_toBottomOf="@id/headerBackground">
 
-        <TextView
-                android:id="@+id/tvOrderNumber"
-                android:layout_width="wrap_content"
+        <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Order #248291"
-                android:textColor="#9E9E9E"
-                android:textSize="18sp" />
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="24dp">
 
-        <TextView
-                android:id="@+id/tvArrivingIn"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Arriving in 12-18 mins"
-                android:textColor="#90CAF9"
-                android:textSize="14sp" />
-    </LinearLayout>
+            <TextView
+                    android:id="@+id/tvOrderNumber"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="15sp"
+                    android:fontFamily="sans-serif"
+                    tools:text="Order #248291" />
 
-    <ScrollView
+            <TextView
+                    android:id="@+id/tvArrivingIn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@color/primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-medium"
+                    tools:text="Arriving in 12-18 mins" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="0dp"
+            android:paddingBottom="100dp"
             app:layout_constraintBottom_toTopOf="@id/footer"
             app:layout_constraintTop_toBottomOf="@id/orderHeader">
 
@@ -75,8 +94,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
+                android:paddingHorizontal="20dp"
+                android:paddingTop="24dp"
                 android:paddingBottom="24dp" />
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
     <LinearLayout
             android:id="@+id/footer"
@@ -88,18 +109,32 @@
             app:layout_constraintBottom_toBottomOf="parent">
 
         <TextView
+                android:id="@+id/tvLastUpdated"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Last updated: Today, 2:45 PM"
-                android:textColor="#BDBDBD"
-                android:textSize="12sp" />
+                android:textColor="@color/text_tertiary"
+                android:textSize="12sp"
+                android:fontFamily="sans-serif"
+                tools:text="Last updated: Feb 17, 2:45 PM" />
 
         <TextView
+                android:id="@+id/tvStatusHint"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
                 android:text="Status updates automatically"
-                android:textColor="#E0E0E0"
-                android:textSize="11sp" />
+                android:textColor="@color/text_tertiary"
+                android:textSize="11sp"
+                android:fontFamily="sans-serif" />
     </LinearLayout>
+
+    <include
+            android:id="@+id/loadingOverlay"
+            layout="@layout/view_loading_wireframe"
+            android:visibility="gone"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

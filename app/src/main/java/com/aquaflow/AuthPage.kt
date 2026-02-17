@@ -26,8 +26,8 @@ class AuthPage : AppCompatActivity() {
     private val etPhone by lazy { findViewById<EditText>(R.id.et_phone) }
     private val spAddress by lazy { findViewById<Spinner>(R.id.sp_address) }
     private val etConfirmPassword by lazy { findViewById<EditText>(R.id.et_confirm_password) }
-    private val ivTogglePassword by lazy { findViewById<ImageView>(R.id.iv_toggle_password) }
-    private val ivToggleConfirmPassword by lazy { findViewById<ImageView>(R.id.iv_toggle_confirm_password) }
+    private val ivTogglePassword by lazy { findViewById<ImageView>(R.id.iv_toggle_passwords) }
+    private val ivToggleConfirmPassword by lazy { findViewById<ImageView>(R.id.iv_toggle_confirm_passwords) }
     private val confirmPasswordContainer by lazy { findViewById<FrameLayout>(R.id.confirm_password_container) }
 
     // Sign-up Specific Labels (for visibility toggling)
@@ -54,6 +54,7 @@ class AuthPage : AppCompatActivity() {
 
         setupListeners()
         toggleUIState(true) // Default to Login
+        maybeResumeSession()
     }
 
     private fun setupListeners() {
@@ -171,6 +172,27 @@ class AuthPage : AppCompatActivity() {
         }
     }
 
+    private fun maybeResumeSession() {
+        val prefs = getSharedPreferences("auth", MODE_PRIVATE)
+        val savedToken = prefs.getString("token", null)
+        if (savedToken.isNullOrBlank()) return
+
+        setLoading(true)
+        AuthApi.getMe(savedToken) { result ->
+            runOnUiThread {
+                setLoading(false)
+                result.onSuccess { auth ->
+                    saveAuth(auth)
+                    val intent = Intent(this, HomePage::class.java)
+                    startActivity(intent)
+                    finish()
+                }.onFailure {
+                    clearSavedAuth()
+                }
+            }
+        }
+    }
+
     private fun saveAuth(auth: AuthResult) {
         val prefs = getSharedPreferences("auth", MODE_PRIVATE)
         prefs.edit()
@@ -181,6 +203,11 @@ class AuthPage : AppCompatActivity() {
             .putString("address", auth.address)
             .putString("phone", auth.phone)
             .apply()
+    }
+
+    private fun clearSavedAuth() {
+        val prefs = getSharedPreferences("auth", MODE_PRIVATE)
+        prefs.edit().clear().apply()
     }
 
     private fun updatePasswordVisibility(

@@ -1,4 +1,4 @@
-package com.aquaflow
+    package com.aquaflow
 
 import okhttp3.Call
 import okhttp3.Callback
@@ -25,7 +25,8 @@ object AuthApi {
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
     // Android emulator -> localhost mapping. Replace with LAN IP for physical devices.
-    const val BASE_URL = "http://10.174.238.100:5500"
+    private const val RAW_BASE_URL = "aqua-flows.onrender.com"
+    private val BASE_URL = normalizeBaseUrl(RAW_BASE_URL)
 
     fun login(email: String, password: String, callback: (Result<AuthResult>) -> Unit) {
         val body = JSONObject()
@@ -63,6 +64,63 @@ object AuthApi {
             .build()
 
         enqueue(request, email, callback)
+    }
+
+    fun getMe(token: String, callback: (Result<AuthResult>) -> Unit) {
+        val request = Request.Builder()
+            .url("$BASE_URL/api/v1/auth/me")
+            .get()
+            .header("Authorization", "Bearer $token")
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                callback(Result.failure(e))
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                response.use {
+                    val raw = it.body?.string()
+                    if (!it.isSuccessful) {
+                        callback(Result.failure(Exception(extractMessage(raw) ?: "Session expired")))
+                        return
+                    }
+
+                    try {
+                        val json = JSONObject(raw ?: "{}")
+                        val user = json.optJSONObject("user")
+                            ?: json.optJSONObject("data")?.optJSONObject("user")
+                            ?: json.optJSONObject("data")
+
+                        if (user == null) {
+                            callback(Result.failure(Exception("Missing user in /auth/me response")))
+                            return
+                        }
+
+                        val email = user.optString("email", "")
+                        val id = user.optString("_id", user.optString("id", ""))
+                        val name = if (user.has("name")) user.optString("name") else null
+                        val address = if (user.has("address")) user.optString("address") else null
+                        val phone = if (user.has("phone")) user.optString("phone") else null
+
+                        callback(
+                            Result.success(
+                                AuthResult(
+                                    token = token,
+                                    userEmail = email,
+                                    userId = id.ifBlank { null },
+                                    name = name,
+                                    address = address,
+                                    phone = phone
+                                )
+                            )
+                        )
+                    } catch (e: JSONException) {
+                        callback(Result.failure(e))
+                    }
+                }
+            }
+        })
     }
 
     private fun enqueue(request: Request, fallbackEmail: String, callback: (Result<AuthResult>) -> Unit) {
@@ -108,6 +166,15 @@ object AuthApi {
             JSONObject(raw).optString("message", null)
         } catch (_: JSONException) {
             null
+        }
+    }
+
+    private fun normalizeBaseUrl(baseUrl: String): String {
+        val trimmed = baseUrl.trim().trimEnd('/')
+        return if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            trimmed
+        } else {
+            "http://$trimmed"
         }
     }
 }

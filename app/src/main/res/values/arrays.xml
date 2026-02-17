@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string-array name="address_options">
-        <item>Select delivery area</item>
-        <item>Downtown</item>
-        <item>Uptown</item>
-        <item>Riverside</item>
-        <item>West End</item>
-        <item>Campus</item>
+        <item>Amanoaoac</item>
+        <item>Aserda</item>
+        <item>Apaya</item>
+        <item>Baloling</item>
+        <item>Coral</item>
+        <item>Golden</item>
+        <item>Luyan</item>
+        <item>Nilombot</item>
+        <item>Pias</item>
+        <item>Poblacion</item>
+        <item>Primicias</item>
+        <item>Santa Maria</item>
+        <item>Torres</item>
     </string-array>
 </resources>

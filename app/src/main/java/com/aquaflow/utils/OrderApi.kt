@@ -30,7 +30,13 @@ data class CreateOrderPayload(
     val waterQuantity: Int,
     val gallonType: String,      // "SLIM" or "ROUND"
     val totalAmount: Double,
-    val paymentMethod: String    // "COD" or "GCASH"
+    val paymentMethod: String,   // "COD" or "GCASH"
+    val gcashPaymentIntentId: String? = null
+)
+
+data class GcashPreparation(
+    val paymentIntentId: String,
+    val checkoutUrl: String
 )
 
 object OrderApi {
@@ -51,6 +57,11 @@ object OrderApi {
             .put("gallon_type", payload.gallonType)
             .put("total_amount", payload.totalAmount)
             .put("payment_method", payload.paymentMethod)
+            .apply {
+                if (!payload.gcashPaymentIntentId.isNullOrBlank()) {
+                    put("gcash_payment_intent_id", payload.gcashPaymentIntentId)
+                }
+            }
             .toString()
 
         //API REQUEST
@@ -78,6 +89,51 @@ object OrderApi {
                             ?.optString("checkout_url", null)
 
                         callback(Result.success(parseOrder(orderJson) to paymentUrl))
+                    } catch (e: Exception) {
+                        callback(Result.failure(e))
+                    }
+                }
+            }
+        })
+    }
+
+    fun prepareGcashPayment(
+        token: String,
+        payload: CreateOrderPayload,
+        callback: (Result<GcashPreparation>) -> Unit
+    ) {
+        val body = JSONObject()
+            .put("water_quantity", payload.waterQuantity)
+            .put("gallon_type", payload.gallonType)
+            .put("total_amount", payload.totalAmount)
+            .put("payment_method", "GCASH")
+            .toString()
+
+        val request = Request.Builder()
+            .url("$BASE_URL/api/v1/orders/gcash_prepare")
+            .header("Authorization", "Bearer $token")
+            .post(body.toRequestBody(jsonMediaType))
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) = callback(Result.failure(e))
+
+            override fun onResponse(call: Call, response: Response) {
+                response.use {
+                    val raw = it.body?.string().orEmpty()
+                    if (!it.isSuccessful) {
+                        callback(Result.failure(Exception(extractMessage(raw) ?: "GCASH preparation failed")))
+                        return
+                    }
+                    try {
+                        val data = JSONObject(raw).getJSONObject("data")
+                        val paymentIntentId = data.optString("payment_intent_id", "")
+                        val checkoutUrl = data.optString("checkout_url", "")
+                        if (paymentIntentId.isBlank() || checkoutUrl.isBlank()) {
+                            callback(Result.failure(Exception("Missing checkout URL from payment provider")))
+                            return
+                        }
+                        callback(Result.success(GcashPreparation(paymentIntentId, checkoutUrl)))
                     } catch (e: Exception) {
                         callback(Result.failure(e))
                     }

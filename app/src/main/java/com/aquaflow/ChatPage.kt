@@ -48,8 +48,10 @@ class ChatPage : AppCompatActivity() {
         tvOrderContextStatus = findViewById(R.id.tvOrderContextStatus)
         loadingOverlay = findViewById(R.id.loadingOverlay)
 
-        tvToolbarName.text = intent.getStringExtra("SENDER_NAME") ?: "Chat"
-        tvStatusSubtitle.text = intent.getStringExtra("COUNTERPARTY_LABEL") ?: "Conversation"
+        val senderName = intent.getStringExtra("SENDER_NAME").orEmpty()
+        val counterpartyLabel = intent.getStringExtra("COUNTERPARTY_LABEL").orEmpty()
+        tvToolbarName.text = buildToolbarTitle(senderName, counterpartyLabel)
+        tvStatusSubtitle.text = counterpartyLabel.ifBlank { "Conversation" }
 
         btnBack.setOnClickListener { finish() }
 
@@ -161,5 +163,14 @@ class ChatPage : AppCompatActivity() {
 
     private fun setLoading(isLoading: Boolean) {
         loadingOverlay.visibility = if (isLoading) View.VISIBLE else View.GONE
+    }
+
+    private fun buildToolbarTitle(senderName: String, counterpartyLabel: String): String {
+        val cleanName = senderName.trim().ifBlank { "Chat" }
+        val cleanLabel = counterpartyLabel.trim()
+        if (cleanLabel.contains("rider", ignoreCase = true) && cleanName != "Chat") {
+            return "$cleanLabel: $cleanName"
+        }
+        return cleanName
     }
 }

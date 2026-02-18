@@ -11,10 +11,20 @@ import androidx.appcompat.app.AppCompatActivity
 import com.aquaflow.utils.ChatApi
 import com.aquaflow.utils.ConversationRow
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 class MessagePage : AppCompatActivity() {
     private lateinit var messagesContainer: LinearLayout
     private lateinit var loadingOverlay: View
+    private val isoWithMillis = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
+    private val isoNoMillis = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,7 +51,8 @@ class MessagePage : AppCompatActivity() {
         }
 
         // includeArchived=false -> completed/cancelled order chats are automatically hidden (archived)
-        ChatApi.listConversations(token, includeArchived = false) { result ->
+        val myUserId = getSharedPreferences("auth", MODE_PRIVATE).getString("userId", null)
+        ChatApi.listConversations(token, includeArchived = false, myUserId = myUserId) { result ->
             runOnUiThread {
                 result.onSuccess { rows ->
                     renderMessages(rows)
@@ -69,9 +80,9 @@ class MessagePage : AppCompatActivity() {
             val dot = itemView.findViewById<View>(R.id.viewUnreadDot)
 
             val roleTag = formatRoleTag(row)
-            tvSender.text = "$roleTag: ${row.counterpartyName}"
-            tvPreview.text = row.lastMessage ?: "No messages yet"
-            tvTime.text = row.lastMessageAt ?: ""
+            tvSender.text = "$roleTag: ${row.counterpartyName.ifBlank { "Unknown" }}"
+            tvPreview.text = row.lastMessage?.takeIf { it.isNotBlank() } ?: "No messages yet"
+            tvTime.text = formatRecentTime(row.lastMessageAt)
             ivProfile.setImageResource(R.drawable.ic_profile)
 
             if (!row.orderId.isNullOrBlank()) {
@@ -134,5 +145,35 @@ class MessagePage : AppCompatActivity() {
 
     private fun setLoading(isLoading: Boolean) {
         loadingOverlay.visibility = if (isLoading) View.VISIBLE else View.GONE
+    }
+
+    private fun formatRecentTime(raw: String?): String {
+        if (raw.isNullOrBlank()) return ""
+        val parsed = parseApiDate(raw) ?: return ""
+        val diffMs = System.currentTimeMillis() - parsed.time
+        if (diffMs < 0) return "now"
+        val minutes = diffMs / 60000
+        val hours = diffMs / 3600000
+        val days = diffMs / 86400000
+
+        return when {
+            minutes < 1 -> "now"
+            minutes < 60 -> "${minutes}m"
+            hours < 24 -> "${hours}h"
+            days < 7 -> "${days}d"
+            else -> SimpleDateFormat("MMM d", Locale.US).format(parsed)
+        }
+    }
+
+    private fun parseApiDate(raw: String): Date? {
+        return try {
+            isoWithMillis.parse(raw)
+        } catch (_: Exception) {
+            try {
+                isoNoMillis.parse(raw)
+            } catch (_: Exception) {
+                null
+            }
+        }
     }
 }

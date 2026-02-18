@@ -81,7 +81,7 @@ class HomePage : AppCompatActivity() {
 
         btnMessageStation.setOnClickListener {
             val orderId = currentOrderId ?: return@setOnClickListener
-            val intent = Intent(this, MessagePage::class.java)
+            val intent = Intent(this, ChatPage::class.java)
             intent.putExtra("order_id", orderId)
             startActivity(intent)
         }

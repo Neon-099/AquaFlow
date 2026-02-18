@@ -42,6 +42,7 @@ object ChatApi {
     fun listConversations(
         token: String,
         includeArchived: Boolean = false,
+        myUserId: String? = null,
         callback: (Result<List<ConversationRow>>) -> Unit
     ) {
         val url = "$BASE_URL/api/v1/chat/conversations?archived=${if (includeArchived) "true" else "false"}"
@@ -63,7 +64,9 @@ object ChatApi {
                     try {
                         val arr = JSONObject(raw).getJSONArray("data")
                         val rows = mutableListOf<ConversationRow>()
-                        for (i in 0 until arr.length()) rows += parseConversation(arr.getJSONObject(i))
+                        for (i in 0 until arr.length()) {
+                            rows += parseConversation(arr.getJSONObject(i), myUserId)
+                        }
                         callback(Result.success(rows))
                     } catch (e: Exception) {
                         callback(Result.failure(e))
@@ -162,54 +165,94 @@ object ChatApi {
         })
     }
 
-    private fun parseConversation(json: JSONObject): ConversationRow {
+    private fun parseConversation(json: JSONObject, myUserId: String?): ConversationRow {
         val participants = json.optJSONArray("participants") ?: JSONArray()
-        var otherName = "Chat"
-        var otherRole: String? = null
+        val counterpartyRole = normalizeChatRole(optNormalized(json, "counterpartyRole"))
+        var otherName: String? = null
+        var otherRole: String? = counterpartyRole
 
+        // Prefer the participant that is not me. Fallback to counterparty role match.
         for (i in 0 until participants.length()) {
-            val p = participants.getJSONObject(i)
-            val role = p.optString("role")
-            val name = p.optString("name")
-            if (!name.isNullOrBlank()) {
-                otherName = name
-                otherRole = role
+            val p = participants.optJSONObject(i) ?: continue
+            val participantUserId = optNormalized(p, "userId")
+            val participantRole = normalizeChatRole(optNormalized(p, "role"))
+            val participantName = optNormalized(p, "name")
+            val notMe = !myUserId.isNullOrBlank() && participantUserId != null && participantUserId != myUserId
+            val roleMatch = counterpartyRole != null && participantRole == counterpartyRole
+            if ((notMe || roleMatch) && !participantName.isNullOrBlank()) {
+                otherName = participantName
+                otherRole = participantRole ?: otherRole
                 break
             }
         }
 
+        if (otherName.isNullOrBlank()) {
+            for (i in 0 until participants.length()) {
+                val p = participants.optJSONObject(i) ?: continue
+                val participantName = optNormalized(p, "name")
+                if (!participantName.isNullOrBlank()) {
+                    otherName = participantName
+                    otherRole = normalizeChatRole(optNormalized(p, "role")) ?: otherRole
+                    break
+                }
+            }
+        }
+
+        val label = optNormalized(json, "counterpartyLabel")
+        val fallbackName = when {
+            label == "Assigned Rider" || label == "Rider" -> "Rider"
+            label == "Staff Support" -> "Staff"
+            else -> "Chat"
+        }
+
         return ConversationRow(
             id = json.optString("_id"),
-            counterpartyName = otherName,
-            counterpartyRole = json.optString("counterpartyRole", otherRole),
-            counterpartyLabel = json.optString("counterpartyLabel", null),
-            lastMessage = json.optString("lastMessage", null),
-            lastMessageAt = json.optString("lastMessageAt", null),
-            orderId = json.optString("orderId", null),
-            orderStatus = json.optString("orderStatus", null),
+            counterpartyName = otherName ?: fallbackName,
+            counterpartyRole = counterpartyRole ?: otherRole,
+            counterpartyLabel = label,
+            lastMessage = optNormalized(json, "lastMessage"),
+            lastMessageAt = optNormalized(json, "lastMessageAt"),
+            orderId = optNormalized(json, "orderId"),
+            orderStatus = optNormalized(json, "orderStatus"),
             unreadCount = json.optInt("unreadCount", 0),
-            archivedAt = json.optString("archivedAt", null)
+            archivedAt = optNormalized(json, "archivedAt")
         )
     }
 
     private fun parseMessage(json: JSONObject): ConversationMessage {
         return ConversationMessage(
             id = json.optString("_id"),
-            message = json.optString("message"),
+            message = optNormalized(json, "message").orEmpty(),
             senderId = json.optString("senderId"),
-            receiverId = json.optString("receiverId", null),
-            timestamp = json.optString("timestamp", null),
-            seenAt = json.optString("seenAt", null)
+            receiverId = optNormalized(json, "receiverId"),
+            timestamp = optNormalized(json, "timestamp"),
+            seenAt = optNormalized(json, "seenAt")
         )
     }
 
     private fun extractMessage(raw: String?): String? {
         if (raw.isNullOrBlank()) return null
-        return try { JSONObject(raw).optString("message", null) } catch (_: Exception) { null }
+        return try { optNormalized(JSONObject(raw), "message") } catch (_: Exception) { null }
     }
 
     private fun normalizeBaseUrl(baseUrl: String): String {
         val trimmed = baseUrl.trim().trimEnd('/')
         return if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) trimmed else "https://$trimmed"
+    }
+
+    private fun normalizeValue(value: String?): String? {
+        val trimmed = value?.trim()
+        if (trimmed.isNullOrEmpty()) return null
+        if (trimmed.equals("null", ignoreCase = true)) return null
+        return trimmed
+    }
+
+    private fun normalizeChatRole(role: String?): String? {
+        return normalizeValue(role)?.lowercase()
+    }
+
+    private fun optNormalized(json: JSONObject, key: String): String? {
+        if (!json.has(key) || json.isNull(key)) return null
+        return normalizeValue(json.opt(key)?.toString())
     }
 }

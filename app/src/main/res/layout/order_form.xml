@@ -161,10 +161,10 @@
                             android:layout_marginBottom="16dp" />
 
                     <com.google.android.material.textfield.TextInputLayout
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="Enter delivery address"
+                            android:hint="Select delivery address"
                             app:hintTextColor="@color/text_secondary"
                             app:boxStrokeColor="@color/primary"
                             app:boxCornerRadiusTopStart="12dp"
@@ -172,10 +172,11 @@
                             app:boxCornerRadiusBottomStart="12dp"
                             app:boxCornerRadiusBottomEnd="12dp">
 
-                        <com.google.android.material.textfield.TextInputEditText
+                        <AutoCompleteTextView
                                 android:id="@+id/etAddress"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
+                                android:inputType="none"
                                 android:textColor="@color/text_primary"
                                 android:textSize="14sp" />
                     </com.google.android.material.textfield.TextInputLayout>

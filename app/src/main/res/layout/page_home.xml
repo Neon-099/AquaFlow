@@ -11,22 +11,8 @@
     <View
         android:id="@+id/headerBackground"
         android:layout_width="match_parent"
-        android:layout_height="150dp"
+        android:layout_height="100dp"
         android:background="@drawable/bg_header_gradient"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <!-- Profile Avatar -->
-    <ImageView
-        android:id="@+id/ivProfileAvatar"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="30dp"
-        android:background="@drawable/bg_circle_white"
-        android:padding="8dp"
-        android:src="@drawable/ic_profile_default"
-        app:tint="@color/primary"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <!-- Greeting Text -->
@@ -42,7 +28,7 @@
         android:fontFamily="sans-serif"
         tools:text="Hi, Emman"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/ivProfileAvatar" />
+        app:layout_constraintTop_toBottomOf="wrap_content" />
 
     <!-- Subtitle Text -->
     <TextView

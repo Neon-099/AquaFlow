@@ -28,7 +28,6 @@ class MessagePage : AppCompatActivity() {
     private lateinit var btnFilterAll: MaterialButton
     private lateinit var btnFilterStaff: MaterialButton
     private lateinit var btnFilterRiders: MaterialButton
-    private lateinit var btnFilterCustomers: MaterialButton
     private lateinit var btnToggleArchive: MaterialButton
     private lateinit var tvArchiveBanner: TextView
     private val allConversations = mutableListOf<ConversationRow>()
@@ -54,7 +53,6 @@ class MessagePage : AppCompatActivity() {
         btnFilterAll = findViewById(R.id.btnFilterAll)
         btnFilterStaff = findViewById(R.id.btnFilterStaff)
         btnFilterRiders = findViewById(R.id.btnFilterRiders)
-        btnFilterCustomers = findViewById(R.id.btnFilterCustomers)
         btnToggleArchive = findViewById(R.id.btnToggleArchive)
         tvArchiveBanner = findViewById(R.id.tvArchiveBanner)
         myUserId = getSharedPreferences("auth", MODE_PRIVATE).getString("userId", null)
@@ -207,7 +205,6 @@ class MessagePage : AppCompatActivity() {
         btnFilterAll.setOnClickListener { setFilter("All") }
         btnFilterStaff.setOnClickListener { setFilter("Staff") }
         btnFilterRiders.setOnClickListener { setFilter("Riders") }
-        btnFilterCustomers.setOnClickListener { setFilter("Customers") }
 
         btnToggleArchive.setOnClickListener {
             showArchived = !showArchived
@@ -242,7 +239,6 @@ class MessagePage : AppCompatActivity() {
         style(btnFilterAll, activeFilter == "All")
         style(btnFilterStaff, activeFilter == "Staff")
         style(btnFilterRiders, activeFilter == "Riders")
-        style(btnFilterCustomers, activeFilter == "Customers")
     }
 
     private fun applyFilters() {
@@ -255,7 +251,6 @@ class MessagePage : AppCompatActivity() {
                 when (activeFilter) {
                     "Staff" -> role == "staff"
                     "Riders" -> role == "rider"
-                    "Customers" -> role == "customer"
                     else -> true
                 }
             }

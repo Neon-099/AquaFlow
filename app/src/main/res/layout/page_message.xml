@@ -10,7 +10,7 @@
     <View
         android:id="@+id/headerBg"
         android:layout_width="match_parent"
-        android:layout_height="150dp"
+        android:layout_height="100dp"
         android:background="@drawable/bg_header_gradient"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -20,7 +20,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="20dp"
-        android:layout_marginTop="56dp"
+        android:layout_marginTop="26dp"
         android:text="Messages"
         android:textColor="@color/text_white"
         android:textSize="28sp"
@@ -35,7 +35,8 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="20dp"
         android:layout_marginEnd="20dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="46dp"
+
         android:orientation="vertical"
         app:layout_constraintTop_toBottomOf="@id/tvPageTitle"
         app:layout_constraintStart_toStartOf="parent"
@@ -104,21 +105,6 @@
                 android:layout_marginStart="6dp"
                 android:layout_weight="1"
                 android:text="Riders"
-                android:textAllCaps="false"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp"
-                app:cornerRadius="18dp"
-                app:strokeColor="@color/border_light"
-                app:strokeWidth="1dp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnFilterCustomers"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="36dp"
-                android:layout_marginStart="6dp"
-                android:layout_weight="1"
-                android:text="Customers"
                 android:textAllCaps="false"
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp"

@@ -65,7 +65,7 @@ class ProfilePage : AppCompatActivity() {
 
     private fun setupEditButton() {
         findViewById<View>(R.id.btnEdit)?.setOnClickListener {
-            showEditNameDialog()
+            showEditNamePhoneDialog()
         }
     }
 
@@ -104,6 +104,11 @@ class ProfilePage : AppCompatActivity() {
             iconRes = R.drawable.ic_profile_help
         ) {
             Toast.makeText(this, "Opening Help Center", Toast.LENGTH_SHORT).show()
+        }
+
+        // Edit phone from header
+        findViewById<View>(R.id.tvUserPhone)?.setOnClickListener {
+            showEditPhoneDialog()
         }
     }
 
@@ -188,35 +193,45 @@ class ProfilePage : AppCompatActivity() {
     }
 
     private fun showEditNameDialog() {
-        val current = getSharedPreferences("auth", MODE_PRIVATE).getString("name", "").orEmpty()
-        val input = android.widget.EditText(this).apply {
-            setText(current)
-            hint = "Full name"
-        }
-        AlertDialog.Builder(this)
-            .setTitle("Edit Name")
-            .setView(input)
-            .setPositiveButton("Save") { _, _ ->
-                val value = input.text.toString().trim()
-                if (value.isNotBlank()) updateProfile(name = value)
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
+        showEditNamePhoneDialog()
     }
 
-    private fun showEditPhoneDialog() {
-        val current = getSharedPreferences("auth", MODE_PRIVATE).getString("phone", "").orEmpty()
-        val input = android.widget.EditText(this).apply {
-            setText(current)
+    private fun showEditNamePhoneDialog() {
+        val prefs = getSharedPreferences("auth", MODE_PRIVATE)
+        val currentName = prefs.getString("name", "").orEmpty()
+        val currentPhone = prefs.getString("phone", "").orEmpty()
+
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(24, 8, 24, 0)
+        }
+
+        val nameInput = android.widget.EditText(this).apply {
+            setText(currentName)
+            hint = "Full name"
+        }
+
+        val phoneInput = android.widget.EditText(this).apply {
+            setText(currentPhone)
             hint = "Phone number"
             inputType = android.text.InputType.TYPE_CLASS_PHONE
         }
+
+        container.addView(nameInput)
+        container.addView(phoneInput)
+
         AlertDialog.Builder(this)
-            .setTitle("Edit Phone")
-            .setView(input)
+            .setTitle("Edit Name & Phone")
+            .setView(container)
             .setPositiveButton("Save") { _, _ ->
-                val value = input.text.toString().trim()
-                if (value.isNotBlank()) updateProfile(phone = value)
+                val name = nameInput.text.toString().trim()
+                val phone = phoneInput.text.toString().trim()
+                if (name.isBlank() && phone.isBlank()) return@setPositiveButton
+                if (phone.isNotBlank() && !phone.matches(Regex("^\\d{11}$"))) {
+                    Toast.makeText(this, "Phone number must be exactly 11 digits", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                updateProfile(name = name.ifBlank { null }, phone = phone.ifBlank { null })
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -224,15 +239,21 @@ class ProfilePage : AppCompatActivity() {
 
     private fun showEditAddressDialog() {
         val current = getSharedPreferences("auth", MODE_PRIVATE).getString("address", "").orEmpty()
-        val input = android.widget.EditText(this).apply {
-            setText(current)
-            hint = "Delivery address"
+        val spinner = android.widget.Spinner(this).apply {
+            adapter = android.widget.ArrayAdapter.createFromResource(
+                this@ProfilePage,
+                R.array.address_options,
+                android.R.layout.simple_spinner_dropdown_item
+            )
         }
+        val index = (spinner.adapter as android.widget.ArrayAdapter<String>).getPosition(current)
+        if (index >= 0) spinner.setSelection(index)
+
         AlertDialog.Builder(this)
             .setTitle("Edit Address")
-            .setView(input)
+            .setView(spinner)
             .setPositiveButton("Save") { _, _ ->
-                val value = input.text.toString().trim()
+                val value = spinner.selectedItem?.toString().orEmpty().trim()
                 if (value.isNotBlank()) updateProfile(address = value)
             }
             .setNegativeButton("Cancel", null)

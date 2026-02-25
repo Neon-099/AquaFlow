@@ -111,6 +111,24 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
+    <TextView
+            android:id="@+id/tvArchivedBanner"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginHorizontal="16dp"
+            android:background="@color/warning_light"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="10dp"
+            android:text="Archived conversations are read-only."
+            android:textColor="@color/warning"
+            android:textSize="12sp"
+            android:fontFamily="sans-serif"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/orderContextCard"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
     <androidx.core.widget.NestedScrollView
             android:id="@+id/chatScrollView"
             android:layout_width="match_parent"
@@ -118,7 +136,7 @@
             android:clipToPadding="false"
             android:padding="16dp"
             app:layout_constraintBottom_toTopOf="@id/inputContainer"
-            app:layout_constraintTop_toBottomOf="@id/orderContextCard">
+            app:layout_constraintTop_toBottomOf="@id/tvArchivedBanner">
 
         <LinearLayout
                 android:id="@+id/chatContainer"
@@ -126,6 +144,20 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical" />
     </androidx.core.widget.NestedScrollView>
+
+    <TextView
+            android:id="@+id/tvTypingIndicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginBottom="6dp"
+            android:text="Typing..."
+            android:textColor="@color/text_tertiary"
+            android:textSize="12sp"
+            android:fontFamily="sans-serif"
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/inputContainer" />
 
     <com.google.android.material.card.MaterialCardView
             android:id="@+id/inputContainer"

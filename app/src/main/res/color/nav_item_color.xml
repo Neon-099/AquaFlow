@@ -4,6 +4,7 @@
     <item android:state_checked="true" android:color="@color/primary"/>
     <item android:state_selected="true" android:color="@color/primary"/>
 
+
     <!-- Default/unselected color -->
     <item android:color="@color/text_secondary"/>
 </selector>

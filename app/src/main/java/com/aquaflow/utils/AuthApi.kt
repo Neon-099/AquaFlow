@@ -17,7 +17,11 @@ data class AuthResult(
     val userId: String?,
     val name: String?,
     val address: String?,
-    val phone: String?
+    val phone: String?,
+    val role: String? = null,
+    val maxCapacityGallons: Int? = null,
+    val currentLoadGallons: Int? = null,
+    val activeOrdersCount: Int? = null
 )
 
 object AuthApi {
@@ -102,6 +106,11 @@ object AuthApi {
                         val name = if (user.has("name")) user.optString("name") else null
                         val address = if (user.has("address")) user.optString("address") else null
                         val phone = if (user.has("phone")) user.optString("phone") else null
+                        val role = if (user.has("role")) user.optString("role") else null
+                        val rider = user.optJSONObject("rider")
+                        val maxCapacity = if (rider != null && rider.has("maxCapacityGallons")) rider.optInt("maxCapacityGallons") else null
+                        val currentLoad = if (rider != null && rider.has("currentLoadGallons")) rider.optInt("currentLoadGallons") else null
+                        val activeOrders = if (rider != null && rider.has("activeOrdersCount")) rider.optInt("activeOrdersCount") else null
 
                         callback(
                             Result.success(
@@ -111,7 +120,88 @@ object AuthApi {
                                     userId = id.ifBlank { null },
                                     name = name,
                                     address = address,
-                                    phone = phone
+                                    phone = phone,
+                                    role = role,
+                                    maxCapacityGallons = maxCapacity,
+                                    currentLoadGallons = currentLoad,
+                                    activeOrdersCount = activeOrders
+                                )
+                            )
+                        )
+                    } catch (e: JSONException) {
+                        callback(Result.failure(e))
+                    }
+                }
+            }
+        })
+    }
+
+    fun updateProfile(
+        token: String,
+        name: String? = null,
+        address: String? = null,
+        phone: String? = null,
+        callback: (Result<AuthResult>) -> Unit
+    ) {
+        val body = JSONObject().apply {
+            if (!name.isNullOrBlank()) put("name", name)
+            if (!address.isNullOrBlank()) put("address", address)
+            if (!phone.isNullOrBlank()) put("phone", phone)
+        }.toString()
+
+        val request = Request.Builder()
+            .url("$BASE_URL/api/v1/auth/profile")
+            .put(body.toRequestBody(jsonMediaType))
+            .header("Authorization", "Bearer $token")
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                callback(Result.failure(e))
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                response.use {
+                    val raw = it.body?.string()
+                    if (!it.isSuccessful) {
+                        callback(Result.failure(Exception(extractMessage(raw) ?: "Update failed")))
+                        return
+                    }
+                    try {
+                        val json = JSONObject(raw ?: "{}")
+                        val user = json.optJSONObject("user")
+                            ?: json.optJSONObject("data")?.optJSONObject("user")
+                            ?: json.optJSONObject("data")
+
+                        if (user == null) {
+                            callback(Result.failure(Exception("Missing user in update profile response")))
+                            return
+                        }
+
+                        val email = user.optString("email", "")
+                        val id = user.optString("id", user.optString("_id", ""))
+                        val nameValue = if (user.has("name")) user.optString("name") else null
+                        val addressValue = if (user.has("address")) user.optString("address") else null
+                        val phoneValue = if (user.has("phone")) user.optString("phone") else null
+                        val role = if (user.has("role")) user.optString("role") else null
+                        val rider = user.optJSONObject("rider")
+                        val maxCapacity = if (rider != null && rider.has("maxCapacityGallons")) rider.optInt("maxCapacityGallons") else null
+                        val currentLoad = if (rider != null && rider.has("currentLoadGallons")) rider.optInt("currentLoadGallons") else null
+                        val activeOrders = if (rider != null && rider.has("activeOrdersCount")) rider.optInt("activeOrdersCount") else null
+
+                        callback(
+                            Result.success(
+                                AuthResult(
+                                    token = token,
+                                    userEmail = email,
+                                    userId = id.ifBlank { null },
+                                    name = nameValue,
+                                    address = addressValue,
+                                    phone = phoneValue,
+                                    role = role,
+                                    maxCapacityGallons = maxCapacity,
+                                    currentLoadGallons = currentLoad,
+                                    activeOrdersCount = activeOrders
                                 )
                             )
                         )
@@ -151,7 +241,8 @@ object AuthApi {
                         val name = if (user != null && user.has("name")) user.optString("name") else null
                         val address = if (user != null && user.has("address")) user.optString("address") else null
                         val phone = if (user != null && user.has("phone")) user.optString("phone") else null
-                        callback(Result.success(AuthResult(token, email, id, name, address, phone)))
+                        val role = if (user != null && user.has("role")) user.optString("role") else null
+                        callback(Result.success(AuthResult(token, email, id, name, address, phone, role = role)))
                     } catch (e: JSONException) {
                         callback(Result.failure(e))
                     }

@@ -186,6 +186,7 @@ class OrderPage : AppCompatActivity() {
 
     private fun fallbackArrivalText(status: String): String {
         return when (status.uppercase()) {
+            "PENDING" -> "No assigned rider"
             "OUT_FOR_DELIVERY" -> "On the way"
             "PICKED_UP" -> "Picked up by rider"
             "CONFIRMED" -> "Preparing order"

@@ -17,7 +17,11 @@ data class MobileOrder (
     val totalAmount: Double,
     val paymentMethod: String,
     val etaText: String?,
-    val createdAt: String?
+    val createdAt: String?,
+    val customerName: String? = null,
+    val customerAddress: String? = null,
+    val assignedRiderId: String? = null,
+    val assignedToMe: Boolean = false
 );
 
 data class MobileOrderDetails(
@@ -232,6 +236,46 @@ object OrderApi {
         })
     }
 
+    fun confirmOrder(token: String, orderId: String, callback: (Result<MobileOrder>) -> Unit) {
+        updateOrderStatus(token, "/api/v1/orders/$orderId/confirm", callback)
+    }
+
+    fun confirmPickup(token: String, orderId: String, callback: (Result<MobileOrder>) -> Unit) {
+        updateOrderStatus(token, "/api/v1/orders/$orderId/pickup", callback)
+    }
+
+    fun startDelivery(token: String, orderId: String, callback: (Result<MobileOrder>) -> Unit) {
+        updateOrderStatus(token, "/api/v1/orders/$orderId/start_delivery", callback)
+    }
+
+    fun markDelivered(token: String, orderId: String, callback: (Result<MobileOrder>) -> Unit) {
+        updateOrderStatus(token, "/api/v1/orders/$orderId/mark_delivered", callback)
+    }
+
+    fun confirmPayment(token: String, orderId: String, callback: (Result<MobileOrder>) -> Unit) {
+        updateOrderStatus(token, "/api/v1/orders/$orderId/confirm_payment", callback)
+    }
+
+    fun cancelPickup(token: String, orderId: String, callback: (Result<MobileOrder>) -> Unit) {
+        updateOrderStatus(token, "/api/v1/orders/$orderId/cancel_pickup", callback)
+    }
+
+    fun bulkConfirmPickup(
+        token: String,
+        orderIds: List<String>,
+        callback: (Result<Unit>) -> Unit
+    ) {
+        updateOrderStatusBulk(token, "/api/v1/orders/bulk/pickup", orderIds, callback)
+    }
+
+    fun bulkStartDelivery(
+        token: String,
+        orderIds: List<String>,
+        callback: (Result<Unit>) -> Unit
+    ) {
+        updateOrderStatusBulk(token, "/api/v1/orders/bulk/start_delivery", orderIds, callback)
+    }
+
     private fun parseOrder(json: JSONObject): MobileOrder {
         return MobileOrder(
             id = json.optString("_id"),
@@ -243,8 +287,71 @@ object OrderApi {
             totalAmount = json.optDouble("total_amount", 0.0),
             paymentMethod = json.optString("payment_method"),
             etaText = json.optString("eta_text", null),
-            createdAt = json.optString("created_at", null)
+            createdAt = json.optString("created_at", null),
+            customerName = json.optString("customer_name", null),
+            customerAddress = json.optString("customer_address", null),
+            assignedRiderId = json.optString("assigned_rider_id", null),
+            assignedToMe = json.optBoolean("assigned_to_me", false)
         )
+    }
+
+    private fun updateOrderStatus(
+        token: String,
+        path: String,
+        callback: (Result<MobileOrder>) -> Unit
+    ) {
+        val request = Request.Builder()
+            .url("$BASE_URL$path")
+            .header("Authorization", "Bearer $token")
+            .put("{}".toRequestBody(jsonMediaType))
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) = callback(Result.failure(e))
+            override fun onResponse(call: Call, response: Response) {
+                response.use {
+                    val raw = it.body?.string().orEmpty()
+                    if (!it.isSuccessful) {
+                        callback(Result.failure(Exception(extractMessage(raw) ?: "Update failed")))
+                        return
+                    }
+                    try {
+                        val orderJson = JSONObject(raw).getJSONObject("data")
+                        callback(Result.success(parseOrder(orderJson)))
+                    } catch (e: Exception) {
+                        callback(Result.failure(e))
+                    }
+                }
+            }
+        })
+    }
+
+    private fun updateOrderStatusBulk(
+        token: String,
+        path: String,
+        orderIds: List<String>,
+        callback: (Result<Unit>) -> Unit
+    ) {
+        val body = JSONObject().put("order_ids", JSONArray(orderIds)).toString()
+        val request = Request.Builder()
+            .url("$BASE_URL$path")
+            .header("Authorization", "Bearer $token")
+            .put(body.toRequestBody(jsonMediaType))
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) = callback(Result.failure(e))
+            override fun onResponse(call: Call, response: Response) {
+                response.use {
+                    val raw = it.body?.string().orEmpty()
+                    if (!it.isSuccessful) {
+                        callback(Result.failure(Exception(extractMessage(raw) ?: "Bulk update failed")))
+                        return
+                    }
+                    callback(Result.success(Unit))
+                }
+            }
+        })
     }
 
     private fun extractMessage(raw: String?): String? {

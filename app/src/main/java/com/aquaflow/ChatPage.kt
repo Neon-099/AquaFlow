@@ -7,9 +7,12 @@ import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.aquaflow.utils.ChatSocket
 import com.aquaflow.utils.ChatApi
 import com.aquaflow.utils.ConversationMessage
 import com.aquaflow.utils.OrderApi
+import io.socket.client.Socket
+import org.json.JSONObject
 
 class ChatPage : AppCompatActivity() {
 
@@ -23,10 +26,16 @@ class ChatPage : AppCompatActivity() {
     private lateinit var tvOrderContextTitle: TextView
     private lateinit var tvOrderContextStatus: TextView
     private lateinit var loadingOverlay: View
+    private lateinit var tvTypingIndicator: TextView
+    private lateinit var tvArchivedBanner: TextView
 
     private var conversationId: String = ""
     private var orderId: String? = null
     private var myUserId: String = ""
+    private var isArchived: Boolean = false
+    private var socket: Socket? = null
+    private val typingHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var stopTypingRunnable: Runnable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,6 +44,7 @@ class ChatPage : AppCompatActivity() {
         conversationId = intent.getStringExtra("CONVERSATION_ID").orEmpty()
         orderId = intent.getStringExtra("ORDER_ID")
         myUserId = getSharedPreferences("auth", MODE_PRIVATE).getString("userId", "").orEmpty()
+        isArchived = !intent.getStringExtra("ARCHIVED_AT").isNullOrBlank()
 
         tvToolbarName = findViewById(R.id.tvToolbarName)
         tvStatusSubtitle = findViewById(R.id.tvStatusSubtitle)
@@ -47,6 +57,8 @@ class ChatPage : AppCompatActivity() {
         tvOrderContextTitle = findViewById(R.id.tvOrderContextTitle)
         tvOrderContextStatus = findViewById(R.id.tvOrderContextStatus)
         loadingOverlay = findViewById(R.id.loadingOverlay)
+        tvTypingIndicator = findViewById(R.id.tvTypingIndicator)
+        tvArchivedBanner = findViewById(R.id.tvArchivedBanner)
 
         val senderName = intent.getStringExtra("SENDER_NAME").orEmpty()
         val counterpartyLabel = intent.getStringExtra("COUNTERPARTY_LABEL").orEmpty()
@@ -56,11 +68,14 @@ class ChatPage : AppCompatActivity() {
         btnBack.setOnClickListener { finish() }
 
         renderOrderContext()
+        renderArchivedState()
         loadMessages()
+        setupSocket()
+        setupTypingListener()
 
         btnSend.setOnClickListener {
             val message = etMessage.text.toString().trim()
-            if (message.isEmpty() || conversationId.isBlank()) return@setOnClickListener
+            if (message.isEmpty() || conversationId.isBlank() || isArchived) return@setOnClickListener
             sendMessage(message)
         }
     }
@@ -68,6 +83,13 @@ class ChatPage : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         markSeen()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        typingHandler.removeCallbacksAndMessages(null)
+        socket?.disconnect()
+        socket = null
     }
 
     private fun renderOrderContext() {
@@ -100,6 +122,75 @@ class ChatPage : AppCompatActivity() {
         }
     }
 
+    private fun renderArchivedState() {
+        tvArchivedBanner.visibility = if (isArchived) View.VISIBLE else View.GONE
+        if (isArchived) {
+            etMessage.isEnabled = false
+            btnSend.isEnabled = false
+            etMessage.hint = "Archived conversations are read-only."
+        } else {
+            etMessage.isEnabled = true
+            btnSend.isEnabled = true
+        }
+    }
+
+    private fun setupSocket() {
+        val token = getSharedPreferences("auth", MODE_PRIVATE).getString("token", null)
+        if (token.isNullOrBlank() || conversationId.isBlank()) return
+
+        socket = ChatSocket.connect(token).apply {
+            on(Socket.EVENT_CONNECT) {
+                emit("chat:join", JSONObject().put("conversationId", conversationId))
+            }
+            on("chat:message") { args ->
+                val incoming = args.firstOrNull() as? JSONObject ?: return@on
+                val convId = incoming.optString("conversationId")
+                if (convId != conversationId) return@on
+                runOnUiThread {
+                    addMessageToUI(
+                        ConversationMessage(
+                            id = incoming.optString("_id"),
+                            message = incoming.optString("message"),
+                            senderId = incoming.optString("senderId"),
+                            receiverId = incoming.optString("receiverId"),
+                            timestamp = incoming.optString("timestamp"),
+                            seenAt = incoming.optString("seenAt")
+                        )
+                    )
+                    markSeen()
+                }
+            }
+            on("chat:typing") { args ->
+                val incoming = args.firstOrNull() as? JSONObject ?: return@on
+                val convId = incoming.optString("conversationId")
+                if (convId != conversationId) return@on
+                val isTyping = incoming.optBoolean("isTyping", false)
+                runOnUiThread {
+                    tvTypingIndicator.visibility = if (isTyping) View.VISIBLE else View.GONE
+                }
+            }
+        }
+    }
+
+    private fun setupTypingListener() {
+        if (isArchived) return
+        etMessage.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: android.text.Editable?) {
+                emitTyping(true)
+                stopTypingRunnable?.let { typingHandler.removeCallbacks(it) }
+                stopTypingRunnable = Runnable { emitTyping(false) }
+                typingHandler.postDelayed(stopTypingRunnable!!, 900)
+            }
+        })
+    }
+
+    private fun emitTyping(isTyping: Boolean) {
+        val payload = JSONObject().put("conversationId", conversationId).put("isTyping", isTyping)
+        socket?.emit("chat:typing", payload)
+    }
+
     private fun loadMessages() {
         setLoading(true)
         val token = getSharedPreferences("auth", MODE_PRIVATE).getString("token", null)
@@ -124,8 +215,40 @@ class ChatPage : AppCompatActivity() {
 
     private fun sendMessage(message: String) {
         val token = getSharedPreferences("auth", MODE_PRIVATE).getString("token", null)
-        if (token.isNullOrBlank()) return
+        if (token.isNullOrBlank() || isArchived) return
 
+        if (socket?.connected() == true) {
+            val payload = JSONObject().put("conversationId", conversationId).put("message", message)
+            ChatSocket.emitWithAck(
+                socket = socket!!,
+                event = "chat:message",
+                payload = payload,
+                onSuccess = { data ->
+                    runOnUiThread {
+                        etMessage.text.clear()
+                        addMessageToUI(
+                            ConversationMessage(
+                                id = data.optString("_id"),
+                                message = data.optString("message"),
+                                senderId = data.optString("senderId"),
+                                receiverId = data.optString("receiverId"),
+                                timestamp = data.optString("timestamp"),
+                                seenAt = data.optString("seenAt")
+                            )
+                        )
+                        markSeen()
+                    }
+                },
+                onError = {
+                    fallbackSend(token, message)
+                }
+            )
+        } else {
+            fallbackSend(token, message)
+        }
+    }
+
+    private fun fallbackSend(token: String, message: String) {
         ChatApi.sendMessage(token, conversationId, message) { result ->
             runOnUiThread {
                 result.onSuccess { saved ->

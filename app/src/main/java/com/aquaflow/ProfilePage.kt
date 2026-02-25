@@ -7,15 +7,11 @@ import com.google.android.material.button.MaterialButton
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.aquaflow.utils.AuthApi
+import com.aquaflow.utils.AuthResult
 import com.google.android.material.bottomnavigation.BottomNavigationView
-
-
-data class UserProfile(
-    val name: String,
-    val phone: String,
-    val profileImageId: Int // Resource ID for sample data
-)
 
 
 class ProfilePage : AppCompatActivity() {
@@ -23,20 +19,10 @@ class ProfilePage : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.page_profile)
 
-        // 1. Create Sample Data
-        val currentUser = UserProfile(
-            name = "Alex Johnson",
-            phone = "+63917 123 4567",
-            profileImageId = R.drawable.ic_profile // Ensure this exists in your res/drawable
-        )
-
-        // 2. Bind Header Data
-        bindHeader(currentUser)
-
-        // 3. Setup Middle Menu Layouts
+        bindHeaderFromPrefs()
         setupMenuOptions()
+        setupEditButton()
 
-        // 4. Logout Logic
         findViewById<MaterialButton>(R.id.btnLogout).setOnClickListener {
             val prefs = getSharedPreferences("auth", MODE_PRIVATE)
             prefs.edit().clear().apply()
@@ -50,14 +36,39 @@ class ProfilePage : AppCompatActivity() {
         setupBottomNavigation()
     }
 
-    private fun bindHeader(user: UserProfile) {
-        val tvName = findViewById<TextView>(R.id.tvUserName)
-        val tvPhone = findViewById<TextView>(R.id.tvUserPhone)
-
-        // The ?. means "Only do this if the view was actually found"
-        tvName?.text = user.name
-        tvPhone?.text = user.phone
+    override fun onResume() {
+        super.onResume()
+        loadProfile()
     }
+
+    private fun bindHeaderFromPrefs() {
+        val prefs = getSharedPreferences("auth", MODE_PRIVATE)
+        val name = prefs.getString("name", "").orEmpty()
+        val phone = prefs.getString("phone", "").orEmpty()
+        val address = prefs.getString("address", "").orEmpty()
+        val payment = prefs.getString("paymentMethod", "COD").orEmpty()
+
+        findViewById<TextView>(R.id.tvUserName)?.text = name.ifBlank { "Not available yet" }
+        findViewById<TextView>(R.id.tvUserPhone)?.text = phone.ifBlank { "Not available yet" }
+        updateRowLabels(address, payment)
+    }
+
+    private fun updateRowLabels(address: String, paymentMethod: String) {
+        val addressLabel = if (address.isBlank()) "Delivery Addresses" else "Delivery Address · $address"
+        val paymentLabel = "Payment Method · ${if (paymentMethod.isBlank()) "COD" else paymentMethod}"
+
+        val rowAddress = findViewById<View>(R.id.rowAddress)
+        val rowPayment = findViewById<View>(R.id.rowPayment)
+        rowAddress?.findViewById<TextView>(R.id.tvOptionLabel)?.text = addressLabel
+        rowPayment?.findViewById<TextView>(R.id.tvOptionLabel)?.text = paymentLabel
+    }
+
+    private fun setupEditButton() {
+        findViewById<View>(R.id.btnEdit)?.setOnClickListener {
+            showEditNameDialog()
+        }
+    }
+
     private fun setupMenuOptions() {
         // Delivery Addresses
         configureRow(
@@ -65,7 +76,7 @@ class ProfilePage : AppCompatActivity() {
             label = "Delivery Addresses",
             iconRes = R.drawable.ic_location
         ) {
-            Toast.makeText(this, "Opening Addresses", Toast.LENGTH_SHORT).show()
+            showEditAddressDialog()
         }
 
         // Payment Methods
@@ -74,7 +85,7 @@ class ProfilePage : AppCompatActivity() {
             label = "Payment Methods",
             iconRes = R.drawable.ic_profile_mail
         ) {
-            Toast.makeText(this, "Opening Payments", Toast.LENGTH_SHORT).show()
+            showPaymentMethodDialog()
         }
 
         // Notifications
@@ -142,6 +153,122 @@ class ProfilePage : AppCompatActivity() {
                     true
                 }
                 else -> false
+            }
+        }
+    }
+
+    private fun loadProfile() {
+        val token = getSharedPreferences("auth", MODE_PRIVATE).getString("token", null)
+        if (token.isNullOrBlank()) return
+        AuthApi.getMe(token) { result ->
+            runOnUiThread {
+                result.onSuccess { auth ->
+                    applyAuthToUi(auth)
+                    saveAuth(auth)
+                }.onFailure {
+                    Toast.makeText(this, "Profile details are not available right now.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun applyAuthToUi(auth: AuthResult) {
+        findViewById<TextView>(R.id.tvUserName)?.text = auth.name?.ifBlank { "Not available yet" } ?: "Not available yet"
+        findViewById<TextView>(R.id.tvUserPhone)?.text = auth.phone?.ifBlank { "Not available yet" } ?: "Not available yet"
+        updateRowLabels(auth.address.orEmpty(), getSharedPreferences("auth", MODE_PRIVATE).getString("paymentMethod", "COD").orEmpty())
+    }
+
+    private fun saveAuth(auth: AuthResult) {
+        val prefs = getSharedPreferences("auth", MODE_PRIVATE)
+        prefs.edit()
+            .putString("name", auth.name)
+            .putString("phone", auth.phone)
+            .putString("address", auth.address)
+            .apply()
+    }
+
+    private fun showEditNameDialog() {
+        val current = getSharedPreferences("auth", MODE_PRIVATE).getString("name", "").orEmpty()
+        val input = android.widget.EditText(this).apply {
+            setText(current)
+            hint = "Full name"
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Edit Name")
+            .setView(input)
+            .setPositiveButton("Save") { _, _ ->
+                val value = input.text.toString().trim()
+                if (value.isNotBlank()) updateProfile(name = value)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showEditPhoneDialog() {
+        val current = getSharedPreferences("auth", MODE_PRIVATE).getString("phone", "").orEmpty()
+        val input = android.widget.EditText(this).apply {
+            setText(current)
+            hint = "Phone number"
+            inputType = android.text.InputType.TYPE_CLASS_PHONE
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Edit Phone")
+            .setView(input)
+            .setPositiveButton("Save") { _, _ ->
+                val value = input.text.toString().trim()
+                if (value.isNotBlank()) updateProfile(phone = value)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showEditAddressDialog() {
+        val current = getSharedPreferences("auth", MODE_PRIVATE).getString("address", "").orEmpty()
+        val input = android.widget.EditText(this).apply {
+            setText(current)
+            hint = "Delivery address"
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Edit Address")
+            .setView(input)
+            .setPositiveButton("Save") { _, _ ->
+                val value = input.text.toString().trim()
+                if (value.isNotBlank()) updateProfile(address = value)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showPaymentMethodDialog() {
+        val options = arrayOf("COD", "GCASH")
+        val prefs = getSharedPreferences("auth", MODE_PRIVATE)
+        val current = prefs.getString("paymentMethod", "COD").orEmpty()
+        val checked = options.indexOf(current).coerceAtLeast(0)
+        AlertDialog.Builder(this)
+            .setTitle("Payment Method")
+            .setSingleChoiceItems(options, checked, null)
+            .setPositiveButton("Save") { dialog, _ ->
+                val list = (dialog as AlertDialog).listView
+                val selected = options[list.checkedItemPosition]
+                prefs.edit().putString("paymentMethod", selected).apply()
+                updateRowLabels(prefs.getString("address", "").orEmpty(), selected)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun updateProfile(name: String? = null, address: String? = null, phone: String? = null) {
+        val token = getSharedPreferences("auth", MODE_PRIVATE).getString("token", null)
+        if (token.isNullOrBlank()) return
+        AuthApi.updateProfile(token, name, address, phone) { result ->
+            runOnUiThread {
+                result.onSuccess { auth ->
+                    applyAuthToUi(auth)
+                    saveAuth(auth)
+                    Toast.makeText(this, "Profile updated", Toast.LENGTH_SHORT).show()
+                }.onFailure {
+                    Toast.makeText(this, it.message ?: "Update failed", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }

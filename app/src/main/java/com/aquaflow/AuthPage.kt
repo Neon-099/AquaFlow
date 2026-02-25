@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.util.Patterns
 import android.view.View
 import android.widget.*
+import android.text.InputFilter
 import android.text.InputType
 import androidx.appcompat.app.AppCompatActivity
 
@@ -54,6 +55,8 @@ class AuthPage : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.auth_page)
+
+        etPhone.filters = arrayOf(InputFilter.LengthFilter(11))
 
         setupListeners()
         toggleUIState(true) // Default to Login
@@ -111,15 +114,20 @@ class AuthPage : AppCompatActivity() {
             etEmail.error = "Please enter a valid email address"
             return
         }
-        if (password.length < 6) {
-            etPassword.error = "Password must be at least 6 characters"
-            return
-        }
-
         // Mode-Specific Validation
         if (!isLoginMode) {
+            val strongPassword = Regex("^(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,}$")
             if (etName.text.isBlank()) { etName.error = "Name is required"; return }
             if (etPhone.text.isBlank()) { etPhone.error = "Phone number is required"; return }
+            val phone = etPhone.text.toString().trim()
+            if (!phone.matches(Regex("^\\d{11}$"))) {
+                etPhone.error = "Phone number must be exactly 11 digits"
+                return
+            }
+            if (!strongPassword.containsMatchIn(password)) {
+                etPassword.error = "Min 8 chars, 1 uppercase, 1 number, 1 special"
+                return
+            }
             if (spAddress.selectedItemPosition == 0) {
                 Toast.makeText(this, "Please select a delivery address", Toast.LENGTH_LONG).show()
                 return
@@ -165,8 +173,7 @@ class AuthPage : AppCompatActivity() {
             result.onSuccess { auth ->
                 saveAuth(auth)
                 Toast.makeText(this, "Welcome ${auth.userEmail}", Toast.LENGTH_LONG).show()
-                val intent = Intent(this, HomePage::class.java)
-                startActivity(intent)
+                navigateToRoleHome(auth.role)
                 finish()
             }.onFailure { err ->
                 val message = err.message ?: "Authentication failed"
@@ -186,14 +193,23 @@ class AuthPage : AppCompatActivity() {
                 setLoading(false)
                 result.onSuccess { auth ->
                     saveAuth(auth)
-                    val intent = Intent(this, HomePage::class.java)
-                    startActivity(intent)
+                    navigateToRoleHome(auth.role)
                     finish()
                 }.onFailure {
                     clearSavedAuth()
                 }
             }
         }
+    }
+
+    private fun navigateToRoleHome(role: String?) {
+        val normalized = role?.lowercase()
+        val target = when (normalized) {
+            "rider" -> RiderHomePage::class.java
+            "customer" -> HomePage::class.java
+            else -> HomePage::class.java
+        }
+        startActivity(Intent(this, target))
     }
 
     private fun saveAuth(auth: AuthResult) {
@@ -205,6 +221,10 @@ class AuthPage : AppCompatActivity() {
             .putString("name", auth.name)
             .putString("address", auth.address)
             .putString("phone", auth.phone)
+            .putString("role", auth.role)
+            .putInt("maxCapacityGallons", auth.maxCapacityGallons ?: -1)
+            .putInt("currentLoadGallons", auth.currentLoadGallons ?: -1)
+            .putInt("activeOrdersCount", auth.activeOrdersCount ?: -1)
             .apply()
     }
 

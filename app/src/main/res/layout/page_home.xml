@@ -28,7 +28,7 @@
         android:fontFamily="sans-serif"
         tools:text="Hi, Emman"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="wrap_content" />
+        app:layout_constraintTop_toBottomOf="@id/tvSubtitle" />
 
     <!-- Subtitle Text -->
     <TextView

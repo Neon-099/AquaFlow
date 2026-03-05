@@ -89,7 +89,7 @@ class OrderPage : AppCompatActivity() {
 
             val orderCode = order.orderCode ?: "ORD-${order.id.takeLast(6)}"
             tvOrderTitle.text = "#$orderCode"
-            tvArrival.text = order.etaText ?: fallbackArrivalText(order.status)
+            tvArrival.text = order.etaText?.takeIf { it.isNotBlank() } ?: fallbackArrivalText(order.status)
 
             val mappedStatus = OrderStatusBadgeMapper.fromServerStatus(order.status)
             OrderStatusBadgeMapper.apply(tvStatus, mappedStatus)
@@ -186,12 +186,12 @@ class OrderPage : AppCompatActivity() {
 
     private fun fallbackArrivalText(status: String): String {
         return when (status.uppercase()) {
-            "PENDING" -> "No assigned rider"
+            "PENDING" -> "Waiting to assign rider"
             "OUT_FOR_DELIVERY" -> "On the way"
             "PICKED_UP" -> "Picked up by rider"
             "CONFIRMED" -> "Preparing order"
             "PENDING_PAYMENT" -> "Awaiting payment"
-            else -> "Processing"
+            else -> "Waiting to assign rider"
         }
     }
 

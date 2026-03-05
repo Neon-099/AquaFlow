@@ -3,7 +3,6 @@ package com.aquaflow
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -32,7 +31,6 @@ class MessagePage : AppCompatActivity() {
     private lateinit var tvArchiveBanner: TextView
     private val allConversations = mutableListOf<ConversationRow>()
     private var activeFilter: String = "All"
-    private var showArchived: Boolean = false
     private var currentQuery: String = ""
     private var socket: Socket? = null
     private var myUserId: String? = null
@@ -82,8 +80,7 @@ class MessagePage : AppCompatActivity() {
             return
         }
 
-        // includeArchived=false -> completed/cancelled order chats are automatically hidden (archived)
-        ChatApi.listConversations(token, includeArchived = showArchived, myUserId = myUserId) { result ->
+        ChatApi.listConversations(token, includeArchived = false, myUserId = myUserId) { result ->
             runOnUiThread {
                 result.onSuccess { rows ->
                     allConversations.clear()
@@ -107,7 +104,7 @@ class MessagePage : AppCompatActivity() {
             val tvSender = itemView.findViewById<TextView>(R.id.tvSenderName)
             val tvPreview = itemView.findViewById<TextView>(R.id.tvMessagePreview)
             val tvTime = itemView.findViewById<TextView>(R.id.tvMessageTime)
-            val ivProfile = itemView.findViewById<ImageView>(R.id.ivSenderProfile)
+            val tvSenderInitial = itemView.findViewById<TextView>(R.id.tvSenderInitial)
             val tvOrderBadge = itemView.findViewById<TextView>(R.id.tvOrderBadge)
             val tvMeta = itemView.findViewById<TextView>(R.id.tvMetaLine)
             val dot = itemView.findViewById<View>(R.id.viewUnreadDot)
@@ -116,7 +113,7 @@ class MessagePage : AppCompatActivity() {
             tvSender.text = "$roleTag: ${row.counterpartyName.ifBlank { "Unknown" }}"
             tvPreview.text = row.lastMessage?.takeIf { it.isNotBlank() } ?: "No messages yet"
             tvTime.text = formatRecentTime(row.lastMessageAt)
-            ivProfile.setImageResource(R.drawable.ic_profile)
+            tvSenderInitial.text = buildInitials(row.counterpartyName)
 
             if (!row.orderId.isNullOrBlank()) {
                 tvOrderBadge.visibility = View.VISIBLE
@@ -164,12 +161,6 @@ class MessagePage : AppCompatActivity() {
                             unreadCount = if (senderId.isNotBlank() && senderId == myUserId) row.unreadCount else row.unreadCount + 1
                         )
                     }.toMutableList()
-
-                    val target = updated.find { it.id == convId }
-                    if (target != null) {
-                        updated.removeAll { it.id == convId }
-                        updated.add(0, target)
-                    }
                     allConversations.clear()
                     allConversations.addAll(updated)
                     applyFilters()
@@ -206,14 +197,8 @@ class MessagePage : AppCompatActivity() {
         btnFilterStaff.setOnClickListener { setFilter("Staff") }
         btnFilterRiders.setOnClickListener { setFilter("Riders") }
 
-        btnToggleArchive.setOnClickListener {
-            showArchived = !showArchived
-            btnToggleArchive.text = if (showArchived) "Show Inbox" else "Show Archived"
-            tvArchiveBanner.visibility = if (showArchived) View.VISIBLE else View.GONE
-            loadConversations()
-        }
-
-        tvArchiveBanner.visibility = if (showArchived) View.VISIBLE else View.GONE
+        btnToggleArchive.visibility = View.GONE
+        tvArchiveBanner.visibility = View.GONE
         updateFilterStyles()
     }
 
@@ -245,7 +230,7 @@ class MessagePage : AppCompatActivity() {
         val query = currentQuery.lowercase()
         var base = allConversations.toList()
 
-        if (!showArchived && activeFilter != "All") {
+        if (activeFilter != "All") {
             base = base.filter {
                 val role = it.counterpartyRole?.lowercase()
                 when (activeFilter) {
@@ -265,6 +250,7 @@ class MessagePage : AppCompatActivity() {
             }
         }
 
+        base = sortConversations(base)
         renderMessages(base)
     }
 
@@ -331,5 +317,21 @@ class MessagePage : AppCompatActivity() {
                 null
             }
         }
+    }
+
+    private fun sortConversations(rows: List<ConversationRow>): List<ConversationRow> {
+        return rows.sortedWith(
+            compareBy<ConversationRow> { it.lastMessageAt.isNullOrBlank() }
+                .thenByDescending { parseApiDate(it.lastMessageAt ?: "")?.time ?: Long.MIN_VALUE }
+        )
+    }
+
+    private fun buildInitials(name: String?): String {
+        val cleaned = name?.trim().orEmpty()
+        if (cleaned.isBlank()) return "CF"
+        val parts = cleaned.split(Regex("\\s+")).filter { it.isNotBlank() }
+        if (parts.isEmpty()) return "CF"
+        val initials = parts.take(2).mapNotNull { part -> part.firstOrNull()?.uppercaseChar() }
+        return initials.joinToString("").ifBlank { "CF" }
     }
 }

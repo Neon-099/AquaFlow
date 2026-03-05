@@ -33,7 +33,9 @@ class ChatPage : AppCompatActivity() {
     private var orderId: String? = null
     private var myUserId: String = ""
     private var isArchived: Boolean = false
+    private var isSendingMessage: Boolean = false
     private var socket: Socket? = null
+    private val renderedMessageKeys = linkedSetOf<String>()
     private val typingHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private var stopTypingRunnable: Runnable? = null
 
@@ -75,7 +77,7 @@ class ChatPage : AppCompatActivity() {
 
         btnSend.setOnClickListener {
             val message = etMessage.text.toString().trim()
-            if (message.isEmpty() || conversationId.isBlank() || isArchived) return@setOnClickListener
+            if (message.isEmpty() || conversationId.isBlank() || isArchived || isSendingMessage) return@setOnClickListener
             sendMessage(message)
         }
     }
@@ -203,6 +205,7 @@ class ChatPage : AppCompatActivity() {
             runOnUiThread {
                 result.onSuccess { messages ->
                     chatContainer.removeAllViews()
+                    renderedMessageKeys.clear()
                     messages.forEach { addMessageToUI(it) }
                     markSeen()
                     setLoading(false)
@@ -217,6 +220,7 @@ class ChatPage : AppCompatActivity() {
         val token = getSharedPreferences("auth", MODE_PRIVATE).getString("token", null)
         if (token.isNullOrBlank() || isArchived) return
 
+        setSendingState(true)
         if (socket?.connected() == true) {
             val payload = JSONObject().put("conversationId", conversationId).put("message", message)
             ChatSocket.emitWithAck(
@@ -226,6 +230,7 @@ class ChatPage : AppCompatActivity() {
                 onSuccess = { data ->
                     runOnUiThread {
                         etMessage.text.clear()
+                        setSendingState(false)
                         addMessageToUI(
                             ConversationMessage(
                                 id = data.optString("_id"),
@@ -239,8 +244,14 @@ class ChatPage : AppCompatActivity() {
                         markSeen()
                     }
                 },
-                onError = {
-                    fallbackSend(token, message)
+                onError = { error ->
+                    runOnUiThread {
+                        setSendingState(false)
+                        if (error.contains("archived", ignoreCase = true)) {
+                            isArchived = true
+                            renderArchivedState()
+                        }
+                    }
                 }
             )
         } else {
@@ -256,8 +267,12 @@ class ChatPage : AppCompatActivity() {
                     addMessageToUI(saved)
                     markSeen()
                 }.onFailure {
-                    // keep silent for now
+                    if (it.message?.contains("archived", ignoreCase = true) == true) {
+                        isArchived = true
+                        renderArchivedState()
+                    }
                 }
+                setSendingState(false)
             }
         }
     }
@@ -269,6 +284,10 @@ class ChatPage : AppCompatActivity() {
     }
 
     private fun addMessageToUI(chat: ConversationMessage) {
+        val messageKey = buildMessageKey(chat)
+        if (renderedMessageKeys.contains(messageKey)) return
+        renderedMessageKeys.add(messageKey)
+
         val isSender = chat.senderId == myUserId
         val layoutId = if (isSender) R.layout.item_chat_right else R.layout.item_chat_left
         val view = layoutInflater.inflate(layoutId, chatContainer, false)
@@ -282,6 +301,17 @@ class ChatPage : AppCompatActivity() {
         }
 
         chatContainer.addView(view)
+    }
+
+    private fun buildMessageKey(chat: ConversationMessage): String {
+        val id = chat.id.trim()
+        if (id.isNotBlank()) return id
+        return "${chat.senderId}|${chat.timestamp.orEmpty()}|${chat.message}"
+    }
+
+    private fun setSendingState(isSending: Boolean) {
+        isSendingMessage = isSending
+        btnSend.isEnabled = !isArchived && !isSending
     }
 
     private fun setLoading(isLoading: Boolean) {

@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 
 import com.aquaflow.utils.AuthApi
 import com.aquaflow.utils.AuthResult
+import com.aquaflow.utils.PushRegistration
 
 class AuthPage : AppCompatActivity() {
 
@@ -61,6 +62,10 @@ class AuthPage : AppCompatActivity() {
         setupListeners()
         toggleUIState(true) // Default to Login
         maybeResumeSession()
+
+        //NOTIFICATION
+        PushRegistration.requestNotificationPermissionIfNeeded(this)
+        PushRegistration.syncTokenIfPossible(this)
     }
 
     private fun setupListeners() {
@@ -106,6 +111,8 @@ class AuthPage : AppCompatActivity() {
 
     // --- Business & Validation Logic ---
     private fun validateAndSubmit() {
+        clearAuthFieldErrors()
+
         val email = etEmail.text.toString().trim()
         val password = etPassword.text.toString().trim()
 
@@ -172,11 +179,49 @@ class AuthPage : AppCompatActivity() {
             setLoading(false)
             result.onSuccess { auth ->
                 saveAuth(auth)
+                PushRegistration.syncTokenIfPossible(this)
+
                 Toast.makeText(this, "Welcome ${auth.userEmail}", Toast.LENGTH_LONG).show()
                 navigateToRoleHome(auth.role)
                 finish()
             }.onFailure { err ->
-                val message = err.message ?: "Authentication failed"
+                showFieldSpecificAuthError(err.message)
+            }
+        }
+    }
+
+    private fun clearAuthFieldErrors() {
+        etEmail.error = null
+        etPassword.error = null
+    }
+
+    private fun showFieldSpecificAuthError(rawMessage: String?) {
+        val normalized = rawMessage?.trim()?.lowercase().orEmpty()
+
+        when {
+            normalized.contains("email not found") -> {
+                etEmail.error = "Email not found"
+                etEmail.requestFocus()
+            }
+            normalized.contains("incorrect password") || normalized.contains("password is incorrect") -> {
+                etPassword.error = "Incorrect password"
+                etPassword.requestFocus()
+            }
+            normalized.contains("please provide email and password") -> {
+                if (etEmail.text.toString().trim().isBlank()) {
+                    etEmail.error = "Email is required"
+                }
+                if (etPassword.text.toString().trim().isBlank()) {
+                    etPassword.error = "Password is required"
+                }
+                if (etEmail.error != null) etEmail.requestFocus() else etPassword.requestFocus()
+            }
+            normalized.contains("user already exists") -> {
+                etEmail.error = "Email is already registered"
+                etEmail.requestFocus()
+            }
+            else -> {
+                val message = rawMessage?.takeIf { it.isNotBlank() } ?: "Unable to authenticate. Please try again."
                 Toast.makeText(this, message, Toast.LENGTH_LONG).show()
             }
         }
@@ -193,6 +238,10 @@ class AuthPage : AppCompatActivity() {
                 setLoading(false)
                 result.onSuccess { auth ->
                     saveAuth(auth)
+
+                    //FCM
+                    PushRegistration.syncTokenIfPossible(this)
+
                     navigateToRoleHome(auth.role)
                     finish()
                 }.onFailure {

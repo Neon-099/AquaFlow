@@ -1,5 +1,6 @@
 package com.aquaflow
 
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
@@ -31,17 +32,18 @@ class OrderTrackingPage : AppCompatActivity() {
         val title: String,
         val subtitle: String,
         val iconRes: Int,
-        val statusKey: String
+        val statusKey: String,
+        val colorHex: String
     )
 
     private val steps = listOf(
-        TrackingStep("Confirmed", "Order validated by system", R.drawable.ic_confirmed, "CONFIRMED"),
-        TrackingStep("Gallon Pickup", "Rider collected empty gallons", R.drawable.ic_pickup, "PICKED_UP"),
-        TrackingStep("Refilling In Progress", "Station is refilling your order", R.drawable.ic_process, "PICKED_UP"),
-        TrackingStep("Delivery In Progress", "Rider is en route to you", R.drawable.ic_delivery_truck, "OUT_FOR_DELIVERY"),
-        TrackingStep("Delivered", "Rider marked order as delivered", R.drawable.ic_delivered, "DELIVERED"),
-        TrackingStep("Pending Payment", "Awaiting COD/GCASH confirmation", R.drawable.ic_payment, "PENDING_PAYMENT"),
-        TrackingStep("Completed", "Order fulfilled and closed", R.drawable.ic_check_circle, "COMPLETED")
+        TrackingStep("Confirmed", "Order validated by system", R.drawable.ic_confirmed, "CONFIRMED", "#10B981"),
+        TrackingStep("Gallon Pickup", "Rider collected empty gallons", R.drawable.ic_pickup, "PICKED_UP", "#0EA5E9"),
+        TrackingStep("Refilling In Progress", "Station is refilling your order", R.drawable.ic_process, "PICKED_UP", "#8B5CF6"),
+        TrackingStep("Delivery In Progress", "Rider is en route to you", R.drawable.ic_delivery_truck, "OUT_FOR_DELIVERY", "#F59E0B"),
+        TrackingStep("Delivered", "Rider marked order as delivered", R.drawable.ic_delivered, "DELIVERED", "#06B6D4"),
+        TrackingStep("Pending Payment", "Awaiting COD/GCASH confirmation", R.drawable.ic_payment, "PENDING_PAYMENT", "#F43F5E"),
+        TrackingStep("Completed", "Order fulfilled and closed", R.drawable.ic_check_circle, "COMPLETED", "#059669")
     )
 
     private val pollRunnable = object : Runnable {
@@ -111,7 +113,7 @@ class OrderTrackingPage : AppCompatActivity() {
                         !order.etaText.isNullOrBlank() -> "Arriving in ${order.etaText}"
                         order.status.equals("PENDING_PAYMENT", true) -> "Awaiting payment confirmation"
                         order.status.equals("COMPLETED", true) -> "Order completed"
-                        else -> "Status: ${order.status.replace("_", " ")}"
+                        else -> "Waiting to assign rider"
                     }
 
                     tvLastUpdated.text = "Last updated: ${nowTime()}"
@@ -147,22 +149,25 @@ class OrderTrackingPage : AppCompatActivity() {
             when {
                 i < currentIndex -> {
                     iconBg.setBackgroundResource(R.drawable.bg_circle_completed)
+                    iconBg.backgroundTintList = ColorStateList.valueOf(colorOrDefault(step.colorHex, "#10B981"))
                     icon.setColorFilter(Color.WHITE)
-                    title.setTextColor(Color.parseColor("#4CAF50"))
+                    title.setTextColor(colorOrDefault(step.colorHex, "#10B981"))
                     subtitle.setTextColor(Color.GRAY)
-                    lineTop.setBackgroundColor(Color.parseColor("#4CAF50"))
-                    lineBottom.setBackgroundColor(Color.parseColor("#4CAF50"))
+                    lineTop.setBackgroundColor(colorOrDefault(step.colorHex, "#10B981"))
+                    lineBottom.setBackgroundColor(colorOrDefault(step.colorHex, "#10B981"))
                 }
                 i == currentIndex -> {
-                    iconBg.setBackgroundResource(R.drawable.bg_circle_current)
-                    icon.setColorFilter(Color.parseColor("#2196F3"))
-                    title.setTextColor(Color.parseColor("#2196F3"))
+                    iconBg.setBackgroundResource(R.drawable.bg_circle_completed)
+                    iconBg.backgroundTintList = ColorStateList.valueOf(colorOrDefault(step.colorHex, "#2563EB"))
+                    icon.setColorFilter(Color.WHITE)
+                    title.setTextColor(colorOrDefault(step.colorHex, "#2563EB"))
                     subtitle.setTextColor(Color.GRAY)
-                    lineTop.setBackgroundColor(if (i > 0) Color.parseColor("#4CAF50") else Color.parseColor("#E0E0E0"))
+                    lineTop.setBackgroundColor(if (i > 0) colorOrDefault(step.colorHex, "#10B981") else Color.parseColor("#E0E0E0"))
                     lineBottom.setBackgroundColor(Color.parseColor("#E0E0E0"))
                 }
                 else -> {
                     iconBg.setBackgroundResource(R.drawable.bg_circle_inactive)
+                    iconBg.backgroundTintList = null
                     icon.setColorFilter(Color.parseColor("#BDBDBD"))
                     title.setTextColor(Color.parseColor("#BDBDBD"))
                     subtitle.setTextColor(Color.parseColor("#E0E0E0"))
@@ -193,6 +198,14 @@ class OrderTrackingPage : AppCompatActivity() {
 
     private fun nowTime(): String =
         SimpleDateFormat("MMM dd, h:mm a", Locale.getDefault()).format(Date())
+
+    private fun colorOrDefault(hex: String, fallbackHex: String): Int {
+        return try {
+            Color.parseColor(hex)
+        } catch (_: Exception) {
+            Color.parseColor(fallbackHex)
+        }
+    }
 
     private fun setLoading(isLoading: Boolean) {
         loadingOverlay.visibility = if (isLoading) View.VISIBLE else View.GONE

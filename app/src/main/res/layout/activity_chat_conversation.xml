@@ -204,7 +204,7 @@
 
     <include
             android:id="@+id/loadingOverlay"
-            layout="@layout/view_loading_wireframe"
+            layout="@layout/view_loading_chat"
             android:visibility="gone"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"

@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import com.google.android.material.button.MaterialButton
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -12,7 +13,9 @@ import androidx.appcompat.app.AppCompatActivity
 import com.aquaflow.utils.AuthApi
 import com.aquaflow.utils.AuthResult
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import androidx.appcompat.widget.SwitchCompat
 
+import com.aquaflow.utils.PushRegistration
 
 class ProfilePage : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,14 +27,19 @@ class ProfilePage : AppCompatActivity() {
         setupEditButton()
 
         findViewById<MaterialButton>(R.id.btnLogout).setOnClickListener {
-            val prefs = getSharedPreferences("auth", MODE_PRIVATE)
-            prefs.edit().clear().apply()
-            Toast.makeText(this, "Logged out", Toast.LENGTH_SHORT).show()
-            val intent = Intent(this, AuthPage::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            startActivity(intent)
-            finish()
+            PushRegistration.unregisterCurrentToken(this) {
+                runOnUiThread {
+                    val prefs = getSharedPreferences("auth", MODE_PRIVATE)
+                    prefs.edit().clear().apply()
+                    Toast.makeText(this, "Logged out", Toast.LENGTH_SHORT).show()
+                    val intent = Intent(this, AuthPage::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    finish()
+                }
+            }
         }
+
 
         setupBottomNavigation()
     }
@@ -50,6 +58,7 @@ class ProfilePage : AppCompatActivity() {
 
         findViewById<TextView>(R.id.tvUserName)?.text = name.ifBlank { "Not available yet" }
         findViewById<TextView>(R.id.tvUserPhone)?.text = phone.ifBlank { "Not available yet" }
+        findViewById<TextView>(R.id.tvUserInitial)?.text = buildInitials(name)
         updateRowLabels(address, payment)
     }
 
@@ -65,7 +74,7 @@ class ProfilePage : AppCompatActivity() {
 
     private fun setupEditButton() {
         findViewById<View>(R.id.btnEdit)?.setOnClickListener {
-            showEditNamePhoneDialog()
+            showEditDialog()
         }
     }
 
@@ -94,7 +103,7 @@ class ProfilePage : AppCompatActivity() {
             label = "Notifications",
             iconRes = R.drawable.ic_profile_notifications
         ) {
-            Toast.makeText(this, "Notification Settings", Toast.LENGTH_SHORT).show()
+            showNotificationSettingsDialog()
         }
 
         // Help Center
@@ -108,7 +117,7 @@ class ProfilePage : AppCompatActivity() {
 
         // Edit phone from header
         findViewById<View>(R.id.tvUserPhone)?.setOnClickListener {
-            showEditPhoneDialog()
+            showEditDialog()
         }
     }
 
@@ -180,6 +189,7 @@ class ProfilePage : AppCompatActivity() {
     private fun applyAuthToUi(auth: AuthResult) {
         findViewById<TextView>(R.id.tvUserName)?.text = auth.name?.ifBlank { "Not available yet" } ?: "Not available yet"
         findViewById<TextView>(R.id.tvUserPhone)?.text = auth.phone?.ifBlank { "Not available yet" } ?: "Not available yet"
+        findViewById<TextView>(R.id.tvUserInitial)?.text = buildInitials(auth.name)
         updateRowLabels(auth.address.orEmpty(), getSharedPreferences("auth", MODE_PRIVATE).getString("paymentMethod", "COD").orEmpty())
     }
 
@@ -192,11 +202,7 @@ class ProfilePage : AppCompatActivity() {
             .apply()
     }
 
-    private fun showEditNameDialog() {
-        showEditNamePhoneDialog()
-    }
-
-    private fun showEditNamePhoneDialog() {
+    private fun showEditDialog() {
         val prefs = getSharedPreferences("auth", MODE_PRIVATE)
         val currentName = prefs.getString("name", "").orEmpty()
         val currentPhone = prefs.getString("phone", "").orEmpty()
@@ -276,6 +282,55 @@ class ProfilePage : AppCompatActivity() {
             }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    private fun showNotificationSettingsDialog() {
+        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(24, 8, 24, 0)
+        }
+
+        val orderUpdatesSwitch = SwitchCompat(this).apply {
+            text = "Order updates"
+            isChecked = prefs.getBoolean("notif_order_updates_customer", true)
+        }
+        val chatSwitch = SwitchCompat(this).apply {
+            text = "Chat messages"
+            isChecked = prefs.getBoolean("notif_chat_customer", true)
+        }
+        val promosSwitch = SwitchCompat(this).apply {
+            text = "Promotions and tips"
+            isChecked = prefs.getBoolean("notif_promos_customer", false)
+        }
+
+        container.addView(orderUpdatesSwitch)
+        container.addView(chatSwitch)
+        container.addView(promosSwitch)
+
+        AlertDialog.Builder(this)
+            .setTitle("Notification Settings")
+            .setView(container)
+            .setPositiveButton("Save") { _, _ ->
+                prefs.edit()
+                    .putBoolean("notif_order_updates_customer", orderUpdatesSwitch.isChecked)
+                    .putBoolean("notif_chat_customer", chatSwitch.isChecked)
+                    .putBoolean("notif_promos_customer", promosSwitch.isChecked)
+                    .apply()
+                Toast.makeText(this, "Notification settings saved", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun buildInitials(name: String?): String {
+        val cleaned = name?.trim().orEmpty()
+        if (cleaned.isBlank()) return "CF"
+        val parts = cleaned.split(Regex("\\s+")).filter { it.isNotBlank() }
+        if (parts.isEmpty()) return "CF"
+        val initials = parts.take(2).mapNotNull { it.firstOrNull()?.uppercaseChar() }.joinToString("")
+        return initials.ifBlank { "CF" }
     }
 
     private fun updateProfile(name: String? = null, address: String? = null, phone: String? = null) {

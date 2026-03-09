@@ -4,14 +4,18 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SwitchCompat
 import com.aquaflow.utils.AuthApi
 import com.aquaflow.utils.AuthResult
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButton
 
+import com.aquaflow.utils.PushRegistration
 class RiderProfilePage : AppCompatActivity() {
     private lateinit var tvUserName: TextView
     private lateinit var tvUserPhone: TextView
@@ -48,6 +52,7 @@ class RiderProfilePage : AppCompatActivity() {
 
         tvUserName.text = name
         tvUserPhone.text = phone
+        findViewById<TextView>(R.id.tvRiderInitial)?.text = buildInitials(name)
     }
 
     private fun bindCachedCapacity() {
@@ -77,6 +82,7 @@ class RiderProfilePage : AppCompatActivity() {
     private fun updateProfile(auth: AuthResult) {
         auth.name?.let { tvUserName.text = it }
         auth.phone?.let { tvUserPhone.text = it }
+        findViewById<TextView>(R.id.tvRiderInitial)?.text = buildInitials(auth.name)
         val capacity = auth.maxCapacityGallons
         if (capacity != null && capacity > 0) {
             tvMaxCapacityValue.text = "$capacity gal"
@@ -118,7 +124,7 @@ class RiderProfilePage : AppCompatActivity() {
             label = "Notifications",
             iconRes = R.drawable.ic_profile_notifications
         ) {
-            Toast.makeText(this, "Notification settings", Toast.LENGTH_SHORT).show()
+            showNotificationSettingsDialog()
         }
 
         configureRow(
@@ -145,15 +151,69 @@ class RiderProfilePage : AppCompatActivity() {
 
     private fun setupLogout() {
         findViewById<MaterialButton>(R.id.btnLogout).setOnClickListener {
-            val prefs = getSharedPreferences("auth", MODE_PRIVATE)
-            prefs.edit().clear().apply()
-            Toast.makeText(this, "Logged out", Toast.LENGTH_SHORT).show()
-            val intent = Intent(this, AuthPage::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            startActivity(intent)
-            finish()
+            PushRegistration.unregisterCurrentToken(this) {
+                runOnUiThread {
+                    val prefs = getSharedPreferences("auth", MODE_PRIVATE)
+                    prefs.edit().clear().apply()
+                    Toast.makeText(this, "Logged out", Toast.LENGTH_SHORT).show()
+                    val intent = Intent(this, AuthPage::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    finish()
+                }
+            }
         }
     }
+
+    private fun showNotificationSettingsDialog() {
+        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(24, 8, 24, 0)
+        }
+
+        val orderUpdatesSwitch = SwitchCompat(this).apply {
+            text = "Order updates"
+            isChecked = prefs.getBoolean("notif_order_updates_rider", true)
+        }
+        val chatSwitch = SwitchCompat(this).apply {
+            text = "Chat messages"
+            isChecked = prefs.getBoolean("notif_chat_rider", true)
+        }
+        val taskSwitch = SwitchCompat(this).apply {
+            text = "Task reminders"
+            isChecked = prefs.getBoolean("notif_tasks_rider", true)
+        }
+
+        container.addView(orderUpdatesSwitch)
+        container.addView(chatSwitch)
+        container.addView(taskSwitch)
+
+        AlertDialog.Builder(this)
+            .setTitle("Notification Settings")
+            .setView(container)
+            .setPositiveButton("Save") { _, _ ->
+                prefs.edit()
+                    .putBoolean("notif_order_updates_rider", orderUpdatesSwitch.isChecked)
+                    .putBoolean("notif_chat_rider", chatSwitch.isChecked)
+                    .putBoolean("notif_tasks_rider", taskSwitch.isChecked)
+                    .apply()
+                Toast.makeText(this, "Notification settings saved", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun buildInitials(name: String?): String {
+        val cleaned = name?.trim().orEmpty()
+        if (cleaned.isBlank()) return "RD"
+        val parts = cleaned.split(Regex("\\s+")).filter { it.isNotBlank() }
+        if (parts.isEmpty()) return "RD"
+        val initials = parts.take(2).mapNotNull { it.firstOrNull()?.uppercaseChar() }.joinToString("")
+        return initials.ifBlank { "RD" }
+    }
+
 
     private fun setupBottomNavigation() {
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)

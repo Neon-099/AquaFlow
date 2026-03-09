@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1039692548070:android:9ac0f21e06d425e754f827",
+        "mobilesdk_app_id": "1:1039692548070:android:c098cf3c3a4256df54f827",
         "android_client_info": {
-          "package_name": "aquaflow.inc"
+          "package_name": "com.aquaflow"
         }
       },
       "oauth_client": [],

@@ -265,7 +265,7 @@ object AuthApi {
         return if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
             trimmed
         } else {
-            "http://$trimmed"
+            "https://$trimmed"
         }
     }
 }

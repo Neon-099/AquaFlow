@@ -45,6 +45,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Search name or order"
+                android:background="@color/white"
             app:endIconMode="clear_text">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -120,6 +121,7 @@
             android:textAllCaps="false"
             android:textColor="@color/text_secondary"
             android:textSize="11sp"
+            android:visibility="gone"
             app:cornerRadius="16dp"
             app:strokeColor="@color/border_light"
             app:strokeWidth="1dp" />
@@ -143,7 +145,6 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:fillViewport="true"
-        android:paddingBottom="100dp"
         app:layout_constraintTop_toBottomOf="@id/layoutMessageFilters"
         app:layout_constraintBottom_toTopOf="@id/bottomNavigation">
 
@@ -166,7 +167,7 @@
 
     <include
         android:id="@+id/loadingOverlay"
-        layout="@layout/view_loading_wireframe"
+        layout="@layout/view_loading_rider_message"
         android:visibility="gone"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"

@@ -10,7 +10,7 @@
     <View
             android:id="@+id/headerBackground"
             android:layout_width="match_parent"
-            android:layout_height="200dp"
+            android:layout_height="150dp"
             android:background="@drawable/bg_header_gradient"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -85,7 +85,6 @@
     <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:paddingBottom="100dp"
             app:layout_constraintBottom_toTopOf="@id/footer"
             app:layout_constraintTop_toBottomOf="@id/orderHeader">
 
@@ -130,7 +129,7 @@
 
     <include
             android:id="@+id/loadingOverlay"
-            layout="@layout/view_loading_wireframe"
+            layout="@layout/view_loading_order_tracking"
             android:visibility="gone"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"

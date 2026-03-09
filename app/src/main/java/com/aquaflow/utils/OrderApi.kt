@@ -279,18 +279,18 @@ object OrderApi {
     private fun parseOrder(json: JSONObject): MobileOrder {
         return MobileOrder(
             id = json.optString("_id"),
-            orderCode = json.optString("order_code", null),
-            status = json.optString("status"),
-            paymentStatus = json.optString("payment_status", null),
+            orderCode = optNormalized(json, "order_code"),
+            status = optNormalized(json, "status").orEmpty(),
+            paymentStatus = optNormalized(json, "payment_status").orEmpty(),
             quantity = json.optInt("water_quantity", 0),
-            gallonType = json.optString("gallon_type"),
+            gallonType = optNormalized(json, "gallon_type").orEmpty(),
             totalAmount = json.optDouble("total_amount", 0.0),
-            paymentMethod = json.optString("payment_method"),
-            etaText = json.optString("eta_text", null),
-            createdAt = json.optString("created_at", null),
-            customerName = json.optString("customer_name", null),
-            customerAddress = json.optString("customer_address", null),
-            assignedRiderId = json.optString("assigned_rider_id", null),
+            paymentMethod = optNormalized(json, "payment_method").orEmpty(),
+            etaText = optNormalized(json, "eta_text"),
+            createdAt = optNormalized(json, "created_at"),
+            customerName = optNormalized(json, "customer_name"),
+            customerAddress = optNormalized(json, "customer_address"),
+            assignedRiderId = optNormalized(json, "assigned_rider_id"),
             assignedToMe = json.optBoolean("assigned_to_me", false)
         )
     }
@@ -300,6 +300,7 @@ object OrderApi {
         path: String,
         callback: (Result<MobileOrder>) -> Unit
     ) {
+        val orderId = extractOrderIdFromPath(path)
         val request = Request.Builder()
             .url("$BASE_URL$path")
             .header("Authorization", "Bearer $token")
@@ -316,8 +317,34 @@ object OrderApi {
                         return
                     }
                     try {
-                        val orderJson = JSONObject(raw).getJSONObject("data")
-                        callback(Result.success(parseOrder(orderJson)))
+                        val root = JSONObject(raw)
+                        val data = root.optJSONObject("data")
+                        if (data != null) {
+                            callback(Result.success(parseOrder(data)))
+                            return
+                        }
+
+                        if (root.optBoolean("queued", false)) {
+                            if (orderId.isNullOrBlank()) {
+                                callback(Result.failure(Exception("Order update queued")))
+                                return
+                            }
+                            listMyOrders(token) { listResult ->
+                                listResult.onSuccess { orders ->
+                                    val match = orders.firstOrNull { it.id == orderId }
+                                    if (match != null) {
+                                        callback(Result.success(match))
+                                    } else {
+                                        callback(Result.failure(Exception("Order update queued")))
+                                    }
+                                }.onFailure { listError ->
+                                    callback(Result.failure(Exception(listError.message ?: "Order update queued")))
+                                }
+                            }
+                            return
+                        }
+
+                        callback(Result.failure(Exception(extractMessage(raw) ?: "Update queued")))
                     } catch (e: Exception) {
                         callback(Result.failure(e))
                     }
@@ -357,6 +384,22 @@ object OrderApi {
     private fun extractMessage(raw: String?): String? {
         if (raw.isNullOrBlank()) return null
         return try { JSONObject(raw).optString("message", null) } catch (_: Exception) { null }
+    }
+
+    private fun optNormalized(json: JSONObject, key: String): String? {
+        if (!json.has(key) || json.isNull(key)) return null
+        val value = json.opt(key)?.toString()?.trim().orEmpty()
+        if (value.isBlank()) return null
+        if (value.equals("null", ignoreCase = true)) return null
+        if (value.equals("undefined", ignoreCase = true)) return null
+        return value
+    }
+
+    private fun extractOrderIdFromPath(path: String): String? {
+        val afterOrders = path.substringAfter("/orders/", "")
+        if (afterOrders.isBlank()) return null
+        val id = afterOrders.substringBefore("/").trim()
+        return id.ifBlank { null }
     }
 
     private fun normalizeBaseUrl(baseUrl: String): String {

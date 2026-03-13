@@ -9,13 +9,20 @@
             android:allowBackup="true"
             android:dataExtractionRules="@xml/data_extraction_rules"
             android:fullBackupContent="@xml/backup_rules"
-            android:icon="@mipmap/ic_launcher"
+            android:icon="@mipmap/aq_logo_launcher"
             android:label="@string/app_name"
-            android:roundIcon="@mipmap/ic_launcher_round"
+            android:roundIcon="@mipmap/aq_logo_launcher"
             android:supportsRtl="true"
             android:theme="@style/Theme.AquaFlow"
             android:usesCleartextTraffic="true"
             >
+
+        <meta-data
+                android:name="com.google.firebase.messaging.default_notification_icon"
+                android:resource="@drawable/aq_notification" />
+        <meta-data
+                android:name="com.google.firebase.messaging.default_notification_color"
+                android:resource="@color/logo_color" />
 
         <service
                 android:name=".utils.AquaFlowFirebaseMessagingService"
@@ -36,9 +43,11 @@
         <activity android:name=".HomePage" android:exported="false" />
         <activity android:name=".OrderPage" android:exported="false" />
         <activity android:name=".MessagePage" android:exported="false" />
+        <activity android:name=".NotificationPage" android:exported="false" />
         <activity android:name=".ChatPage" android:exported="false" />
         <activity android:name=".OrderTrackingPage" android:exported="false" />
         <activity android:name=".OrderFormPage" android:exported="false" />
+        <activity android:name=".ForgotPasswordPage" android:exported="false" />
         <activity android:name=".ProfilePage" android:exported="false" />
         <activity android:name=".RiderOrderPage" android:exported="false" />
         <activity android:name=".RiderMessagePage" android:exported="false" />

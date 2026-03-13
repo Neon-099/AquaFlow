@@ -1,52 +1,46 @@
-package com.aquaflow
+package com.aquaflow.utils
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.aquaflow.utils.PushRegistration
+import com.aquaflow.ChatPage
+import com.aquaflow.HomePage
+import com.aquaflow.OrderTrackingPage
+import com.aquaflow.R
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
-class AquaflowFirebaseMessagingService : FirebaseMessagingService() {
-
-    override fun onNewToken(token: String) {
-        super.onNewToken(token)
-        PushRegistration.onNewFcmToken(this, token)
-    }
+class AquaFlowFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
-        super.onMessageReceived(remoteMessage)
-        showNotification(remoteMessage)
-    }
-
-    private fun showNotification(remoteMessage: RemoteMessage) {
-        val title = remoteMessage.notification?.title ?: "Aquaflow"
-        val body = remoteMessage.notification?.body ?: "You have a new message"
+        val title = remoteMessage.notification?.title ?: "AquaFlow"
+        val body = remoteMessage.notification?.body ?: "You have a new update"
 
         val conversationId = remoteMessage.data["conversationId"].orEmpty()
         val orderId = remoteMessage.data["orderId"].orEmpty()
-        val senderName = title
+        val type = remoteMessage.data["type"].orEmpty()
 
-        val targetIntent = if (conversationId.isNotBlank()) {
+        val targetIntent = if (type == "order_status" && orderId.isNotBlank()) {
+            Intent(this, OrderTrackingPage::class.java).apply {
+                putExtra("order_id", orderId)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            }
+        } else if (conversationId.isNotBlank()) {
             Intent(this, ChatPage::class.java).apply {
                 putExtra("CONVERSATION_ID", conversationId)
                 putExtra("ORDER_ID", orderId.ifBlank { null })
-                putExtra("SENDER_NAME", senderName)
-                putExtra("COUNTERPARTY_LABEL", "Conversation")
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
         } else {
-            val role = getSharedPreferences("auth", Context.MODE_PRIVATE)
-                .getString("role", "customer")
-                ?.lowercase()
-
-            val target = if (role == "rider") RiderMessagePage::class.java else MessagePage::class.java
-            Intent(this, target).apply {
+            Intent(this, HomePage::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
         }
@@ -58,10 +52,11 @@ class AquaflowFirebaseMessagingService : FirebaseMessagingService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        createChannelIfNeeded()
+        val channelId = "aquaflow_general"
+        createChannelIfNeeded(channelId)
 
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_profile_notifications)
+        val notification = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.drawable.aq_notification)
             .setContentTitle(title)
             .setContentText(body)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -69,26 +64,29 @@ class AquaflowFirebaseMessagingService : FirebaseMessagingService() {
             .setContentIntent(pendingIntent)
             .build()
 
-        NotificationManagerCompat.from(this).notify(System.currentTimeMillis().toInt(), notification)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = ActivityCompat.checkSelfPermission(
+                this, Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!granted) return
+        }
+
+        NotificationManagerCompat.from(this).notify(
+            System.currentTimeMillis().toInt(),
+            notification
+        )
     }
 
-    private fun createChannelIfNeeded() {
+    private fun createChannelIfNeeded(channelId: String) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val existing = manager.getNotificationChannel(CHANNEL_ID)
-        if (existing != null) return
+        if (manager.getNotificationChannel(channelId) != null) return
 
         val channel = NotificationChannel(
-            CHANNEL_ID,
-            "Chat Messages",
+            channelId,
+            "AquaFlow Notifications",
             NotificationManager.IMPORTANCE_HIGH
-        ).apply {
-            description = "Aquaflow chat message notifications"
-        }
+        )
         manager.createNotificationChannel(channel)
-    }
-
-    companion object {
-        private const val CHANNEL_ID = "aquaflow_chat_messages"
     }
 }

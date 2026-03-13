@@ -18,6 +18,7 @@ import com.google.android.material.card.MaterialCardView
 class HomePage : AppCompatActivity() {
 
     private lateinit var tvGreeting: TextView
+    private lateinit var tvHeaderInitials: TextView
     private lateinit var cardOrder: MaterialCardView
     private lateinit var tvOrderNumber: TextView
     private lateinit var tvOrderDetails: TextView
@@ -32,6 +33,7 @@ class HomePage : AppCompatActivity() {
     private lateinit var recentActivityContainer: LinearLayout
     private lateinit var tvSeeMore: TextView
     private lateinit var loadingOverlay: View
+    private lateinit var fabOrder: View
 
     private var hideCardRunnable: Runnable? = null
     private var currentOrderId: String? = null
@@ -46,15 +48,19 @@ class HomePage : AppCompatActivity() {
 
         val name = getSharedPreferences("auth", MODE_PRIVATE).getString("name", null)
         tvGreeting.text = if (name.isNullOrBlank()) "Hi there" else "Hi, $name"
+        tvHeaderInitials.text = buildInitials(name)
     }
 
     override fun onResume() {
         super.onResume()
         loadHomeDataFromBackend()
+        updateMessageBadge()
+        updateNotificationBadge()
     }
 
     private fun initializeViews() {
         tvGreeting = findViewById(R.id.tvGreeting)
+        tvHeaderInitials = findViewById(R.id.tvHeaderInitials)
         cardOrder = findViewById(R.id.cardOrder)
         tvOrderNumber = findViewById(R.id.tvOrderNumber)
         tvOrderDetails = findViewById(R.id.tvOrderDetails)
@@ -69,9 +75,13 @@ class HomePage : AppCompatActivity() {
         recentActivityContainer = findViewById(R.id.recentActivityContainer)
         tvSeeMore = findViewById(R.id.btnSeeMore)
         loadingOverlay = findViewById(R.id.loadingOverlay)
+        fabOrder = findViewById(R.id.fabOrder)
     }
 
     private fun setupActionButtons() {
+        fabOrder.setOnClickListener {
+            startActivity(Intent(this, OrderFormPage::class.java))
+        }
         btnTrackDelivery.setOnClickListener {
             val orderId = currentOrderId ?: return@setOnClickListener
             val intent = Intent(this, OrderTrackingPage::class.java)
@@ -81,7 +91,7 @@ class HomePage : AppCompatActivity() {
 
         btnMessageStation.setOnClickListener {
             val orderId = currentOrderId ?: return@setOnClickListener
-            val intent = Intent(this, ChatPage::class.java)
+            val intent = Intent(this, MessagePage::class.java)
             intent.putExtra("order_id", orderId)
             startActivity(intent)
         }
@@ -266,11 +276,60 @@ class HomePage : AppCompatActivity() {
                     startActivity(Intent(this, MessagePage::class.java))
                     true
                 }
+                R.id.navigation_notifications -> {
+                    startActivity(Intent(this, NotificationPage::class.java))
+                    true
+                }
                 R.id.navigation_profile -> {
                     startActivity(Intent(this, ProfilePage::class.java))
                     true
                 }
                 else -> false
+            }
+        }
+    }
+
+    private fun updateMessageBadge() {
+        val token = getSharedPreferences("auth", MODE_PRIVATE).getString("token", null) ?: return
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
+        com.aquaflow.utils.NotificationApi.getUnreadMessageCount(token) { result ->
+            runOnUiThread {
+                result.onSuccess { count ->
+                    val badge = bottomNav.getOrCreateBadge(R.id.navigation_messages)
+                    badge.isVisible = count > 0
+                    badge.number = count.coerceAtMost(99)
+                }
+            }
+        }
+    }
+
+    private fun updateNotificationBadge() {
+        val prefs = getSharedPreferences("auth", MODE_PRIVATE)
+        val token = prefs.getString("token", null) ?: return
+        val role = prefs.getString("role", null)?.lowercase()
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
+        if (role == "rider") {
+            com.aquaflow.utils.NotificationApi.getUnreadMessageCount(token) { messageResult ->
+                runOnUiThread {
+                    val total = messageResult.getOrNull() ?: 0
+                    val badge = bottomNav.getOrCreateBadge(R.id.navigation_notifications)
+                    badge.isVisible = total > 0
+                    badge.number = total.coerceAtMost(99)
+                }
+            }
+            return
+        }
+
+        com.aquaflow.utils.NotificationApi.getUnreadOrderCount(token) { orderResult ->
+            com.aquaflow.utils.NotificationApi.getUnreadMessageCount(token) { messageResult ->
+                runOnUiThread {
+                    val orderCount = orderResult.getOrNull() ?: 0
+                    val messageCount = messageResult.getOrNull() ?: 0
+                    val total = orderCount + messageCount
+                    val badge = bottomNav.getOrCreateBadge(R.id.navigation_notifications)
+                    badge.isVisible = total > 0
+                    badge.number = total.coerceAtMost(99)
+                }
             }
         }
     }
@@ -283,5 +342,12 @@ class HomePage : AppCompatActivity() {
 
     private fun setLoading(isLoading: Boolean) {
         loadingOverlay.visibility = if (isLoading) View.VISIBLE else View.GONE
+    }
+
+    private fun buildInitials(name: String?): String {
+        val parts = name?.trim()?.split(" ")?.filter { it.isNotBlank() }.orEmpty()
+        if (parts.isEmpty()) return "CF"
+        if (parts.size == 1) return parts[0].take(2).uppercase()
+        return "${parts[0].first()}${parts[1].first()}".uppercase()
     }
 }

@@ -72,6 +72,9 @@ class AuthPage : AppCompatActivity() {
         tabLogin.setOnClickListener { toggleUIState(true) }
         tabSignup.setOnClickListener { toggleUIState(false) }
         btnSubmit.setOnClickListener { validateAndSubmit() }
+        tvForgot.setOnClickListener {
+            startActivity(Intent(this, ForgotPasswordPage::class.java))
+        }
         ivTogglePassword.setOnClickListener {
             isPasswordVisible = !isPasswordVisible
             updatePasswordVisibility(etPassword, ivTogglePassword, isPasswordVisible)

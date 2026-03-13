@@ -38,8 +38,8 @@ class OrderTrackingPage : AppCompatActivity() {
 
     private val steps = listOf(
         TrackingStep("Confirmed", "Order validated by system", R.drawable.ic_confirmed, "CONFIRMED", "#10B981"),
-        TrackingStep("Gallon Pickup", "Rider collected empty gallons", R.drawable.ic_pickup, "PICKED_UP", "#0EA5E9"),
-        TrackingStep("Refilling In Progress", "Station is refilling your order", R.drawable.ic_process, "PICKED_UP", "#8B5CF6"),
+        TrackingStep("Gallon Pickup", "Rider collected empty gallons", R.drawable.ic_pickedup, "PICKED_UP", "#0EA5E9"),
+        TrackingStep("Refilling In Progress", "Station is refilling your order", R.drawable.ic_processes, "PICKED_UP", "#8B5CF6"),
         TrackingStep("Delivery In Progress", "Rider is en route to you", R.drawable.ic_delivery_truck, "OUT_FOR_DELIVERY", "#F59E0B"),
         TrackingStep("Delivered", "Rider marked order as delivered", R.drawable.ic_delivered, "DELIVERED", "#06B6D4"),
         TrackingStep("Pending Payment", "Awaiting COD/GCASH confirmation", R.drawable.ic_payment, "PENDING_PAYMENT", "#F43F5E"),

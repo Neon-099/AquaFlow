@@ -40,6 +40,18 @@ class MessagePage : AppCompatActivity() {
     private val isoNoMillis = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX", Locale.US).apply {
         timeZone = TimeZone.getTimeZone("UTC")
     }
+    private val isoWithMillisZ = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
+    private val isoNoMillisZ = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
+    private val isoNoTz = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
+    private val dateOnly = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +75,8 @@ class MessagePage : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         loadConversations()
+        updateMessageBadge()
+        updateNotificationBadge()
     }
 
     override fun onDestroy() {
@@ -266,10 +280,58 @@ class MessagePage : AppCompatActivity() {
                 R.id.navigation_orders -> {
                     startActivity(Intent(this, OrderPage::class.java)); true
                 }
+                R.id.navigation_notifications -> {
+                    startActivity(Intent(this, NotificationPage::class.java)); true
+                }
                 R.id.navigation_profile -> {
                     startActivity(Intent(this, ProfilePage::class.java)); true
                 }
                 else -> false
+            }
+        }
+    }
+
+    private fun updateMessageBadge() {
+        val token = getSharedPreferences("auth", MODE_PRIVATE).getString("token", null) ?: return
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
+        com.aquaflow.utils.NotificationApi.getUnreadMessageCount(token) { result ->
+            runOnUiThread {
+                result.onSuccess { count ->
+                    val badge = bottomNav.getOrCreateBadge(R.id.navigation_messages)
+                    badge.isVisible = count > 0
+                    badge.number = count.coerceAtMost(99)
+                }
+            }
+        }
+    }
+
+    private fun updateNotificationBadge() {
+        val prefs = getSharedPreferences("auth", MODE_PRIVATE)
+        val token = prefs.getString("token", null) ?: return
+        val role = prefs.getString("role", null)?.lowercase()
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
+        if (role == "rider") {
+            com.aquaflow.utils.NotificationApi.getUnreadMessageCount(token) { messageResult ->
+                runOnUiThread {
+                    val total = messageResult.getOrNull() ?: 0
+                    val badge = bottomNav.getOrCreateBadge(R.id.navigation_notifications)
+                    badge.isVisible = total > 0
+                    badge.number = total.coerceAtMost(99)
+                }
+            }
+            return
+        }
+
+        com.aquaflow.utils.NotificationApi.getUnreadOrderCount(token) { orderResult ->
+            com.aquaflow.utils.NotificationApi.getUnreadMessageCount(token) { messageResult ->
+                runOnUiThread {
+                    val orderCount = orderResult.getOrNull() ?: 0
+                    val messageCount = messageResult.getOrNull() ?: 0
+                    val total = orderCount + messageCount
+                    val badge = bottomNav.getOrCreateBadge(R.id.navigation_notifications)
+                    badge.isVisible = total > 0
+                    badge.number = total.coerceAtMost(99)
+                }
             }
         }
     }
@@ -308,17 +370,37 @@ class MessagePage : AppCompatActivity() {
     }
 
     private fun parseApiDate(raw: String): Date? {
-        return try {
-            isoWithMillis.parse(raw)
-        } catch (_: Exception) {
-            try {
-                isoNoMillis.parse(raw)
-            } catch (_: Exception) {
-                null
-            }
-        }
+        return tryParse(raw)
     }
 
+    private fun tryParse(raw: String): Date? {
+        try {
+            return isoWithMillis.parse(raw)
+        } catch (_: Exception) {
+        }
+        try {
+            return isoNoMillis.parse(raw)
+        } catch (_: Exception) {
+        }
+        try {
+            return isoWithMillisZ.parse(raw)
+        } catch (_: Exception) {
+        }
+        try {
+            return isoNoMillisZ.parse(raw)
+        } catch (_: Exception) {
+        }
+        try {
+            return isoNoTz.parse(raw)
+        } catch (_: Exception) {
+        }
+        try {
+            return dateOnly.parse(raw)
+        } catch (_: Exception) {
+        }
+        val numeric = raw.toLongOrNull()
+        return if (numeric != null && numeric > 0) Date(numeric) else null
+    }
     private fun sortConversations(rows: List<ConversationRow>): List<ConversationRow> {
         return rows.sortedWith(
             compareBy<ConversationRow> { it.lastMessageAt.isNullOrBlank() }

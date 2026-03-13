@@ -37,6 +37,8 @@ class OrderPage : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         loadOrdersFromBackend()
+        updateMessageBadge()
+        updateNotificationBadge()
     }
 
     private fun initializeViews() {
@@ -219,11 +221,60 @@ class OrderPage : AppCompatActivity() {
                     startActivity(Intent(this, MessagePage::class.java))
                     true
                 }
+                R.id.navigation_notifications -> {
+                    startActivity(Intent(this, NotificationPage::class.java))
+                    true
+                }
                 R.id.navigation_profile -> {
                     startActivity(Intent(this, ProfilePage::class.java))
                     true
                 }
                 else -> false
+            }
+        }
+    }
+
+    private fun updateMessageBadge() {
+        val token = getSharedPreferences("auth", MODE_PRIVATE).getString("token", null) ?: return
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
+        com.aquaflow.utils.NotificationApi.getUnreadMessageCount(token) { result ->
+            runOnUiThread {
+                result.onSuccess { count ->
+                    val badge = bottomNav.getOrCreateBadge(R.id.navigation_messages)
+                    badge.isVisible = count > 0
+                    badge.number = count.coerceAtMost(99)
+                }
+            }
+        }
+    }
+
+    private fun updateNotificationBadge() {
+        val prefs = getSharedPreferences("auth", MODE_PRIVATE)
+        val token = prefs.getString("token", null) ?: return
+        val role = prefs.getString("role", null)?.lowercase()
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
+        if (role == "rider") {
+            com.aquaflow.utils.NotificationApi.getUnreadMessageCount(token) { messageResult ->
+                runOnUiThread {
+                    val total = messageResult.getOrNull() ?: 0
+                    val badge = bottomNav.getOrCreateBadge(R.id.navigation_notifications)
+                    badge.isVisible = total > 0
+                    badge.number = total.coerceAtMost(99)
+                }
+            }
+            return
+        }
+
+        com.aquaflow.utils.NotificationApi.getUnreadOrderCount(token) { orderResult ->
+            com.aquaflow.utils.NotificationApi.getUnreadMessageCount(token) { messageResult ->
+                runOnUiThread {
+                    val orderCount = orderResult.getOrNull() ?: 0
+                    val messageCount = messageResult.getOrNull() ?: 0
+                    val total = orderCount + messageCount
+                    val badge = bottomNav.getOrCreateBadge(R.id.navigation_notifications)
+                    badge.isVisible = total > 0
+                    badge.number = total.coerceAtMost(99)
+                }
             }
         }
     }

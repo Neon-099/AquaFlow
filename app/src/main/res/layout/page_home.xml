@@ -11,39 +11,91 @@
     <View
         android:id="@+id/headerBackground"
         android:layout_width="match_parent"
-        android:layout_height="100dp"
+        android:layout_height="130dp"
         android:background="@drawable/bg_header_gradient"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Greeting Text -->
-    <TextView
-        android:id="@+id/tvGreeting"
-        android:layout_width="wrap_content"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/headerContent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="20dp"
-        android:layout_marginTop="12dp"
-        android:textColor="@color/text_white"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:fontFamily="sans-serif"
-        tools:text="Hi, Emman"
+        android:layout_marginEnd="20dp"
+        android:layout_marginTop="20dp"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvSubtitle" />
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <!-- Subtitle Text -->
-    <TextView
-        android:id="@+id/tvSubtitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="4dp"
-        android:text="Welcome back"
-        android:textColor="@color/text_white"
-        android:textSize="14sp"
-        android:alpha="0.85"
-        android:fontFamily="sans-serif"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvGreeting" />
+        <!-- Greeting Text -->
+        <TextView
+            android:id="@+id/tvGreeting"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:textColor="@color/text_white"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif"
+            tools:text="Hi, Emman"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/headerAvatar"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- Subtitle Text -->
+        <TextView
+            android:id="@+id/tvSubtitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Welcome back"
+            android:textColor="@color/text_white"
+            android:textSize="14sp"
+            android:alpha="0.88"
+            android:fontFamily="sans-serif"
+            app:layout_constraintStart_toStartOf="@id/tvGreeting"
+            app:layout_constraintEnd_toStartOf="@id/headerAvatar"
+            app:layout_constraintTop_toBottomOf="@id/tvGreeting" />
+
+        <TextView
+            android:id="@+id/tvHeaderTag"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_header_tag"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:text="Live updates on your delivery"
+            android:textColor="@color/text_white"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
+            app:layout_constraintStart_toStartOf="@id/tvGreeting"
+            app:layout_constraintTop_toBottomOf="@id/tvSubtitle" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/headerAvatar"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            app:cardCornerRadius="22dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/surface_white"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/tvGreeting">
+
+            <TextView
+                android:id="@+id/tvHeaderInitials"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="CF"
+                android:textColor="@color/primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"
+                tools:text="EM" />
+        </com.google.android.material.card.MaterialCardView>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- ScrollView for Main Content -->
     <androidx.core.widget.NestedScrollView
@@ -333,6 +385,20 @@
         app:itemTextColor="@color/nav_item_color"
         app:menu="@menu/bottom_nav_menu"
         app:layout_constraintBottom_toBottomOf="parent" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabOrder"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:contentDescription="Place new order"
+        android:src="@drawable/ic_add"
+        app:tint="@color/text_white"
+        app:backgroundTint="@color/primary"
+        app:elevation="8dp"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavigation"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="16dp" />
 
     <include
         android:id="@+id/loadingOverlay"

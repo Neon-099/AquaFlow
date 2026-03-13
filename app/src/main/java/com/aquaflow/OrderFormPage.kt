@@ -1,6 +1,7 @@
 package com.aquaflow
 
 import android.content.Intent
+import android.content.SharedPreferences
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -15,6 +16,7 @@ import com.aquaflow.utils.CreateOrderPayload
 import com.aquaflow.utils.OrderApi
 
 import com.google.android.material.button.MaterialButton
+import org.json.JSONObject
 
 class OrderFormPage : AppCompatActivity() {
     companion object {
@@ -22,10 +24,18 @@ class OrderFormPage : AppCompatActivity() {
         private const val DELIVERY_FEE = 5.0
         private const val GCASH_VAT_FEE = 3.0
         private const val GCASH_PENDING_INTENT_PREF = "gcash_payment_intent_id"
+        private const val GCASH_PENDING_ORDER_PREF = "gcash_pending_order_data"
+    }
+
+    override fun onResume() {
+        super.onResume()
+        maybeFinalizePendingGcashOrder()
     }
 
     private var quantity = 1
     private var pricePerGallon = PRICE_PER_GALLON
+    private lateinit var placeOrderButton: MaterialButton
+    private var isAutoFinalizingGcashOrder = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,7 +47,8 @@ class OrderFormPage : AppCompatActivity() {
         setupQuantityControls()
         setupPaymentMethodWatcher()
 
-        findViewById<MaterialButton>(R.id.btnPlaceOrder).setOnClickListener {
+        placeOrderButton = findViewById(R.id.btnPlaceOrder)
+        placeOrderButton.setOnClickListener {
             validateAndSubmit()
         }
     }
@@ -145,7 +156,6 @@ class OrderFormPage : AppCompatActivity() {
             paymentMethod = paymentMethod
         )
 
-        val placeOrderButton = findViewById<MaterialButton>(R.id.btnPlaceOrder)
         placeOrderButton.isEnabled = false
 
         if (paymentMethod == "GCASH") {
@@ -155,7 +165,13 @@ class OrderFormPage : AppCompatActivity() {
                     runOnUiThread {
                         placeOrderButton.isEnabled = true
                         result.onSuccess { prep ->
-                            prefs.edit().putString(GCASH_PENDING_INTENT_PREF, prep.paymentIntentId).apply()
+                            prefs.edit()
+                                .putString(GCASH_PENDING_INTENT_PREF, prep.paymentIntentId)
+                                .putString(
+                                    GCASH_PENDING_ORDER_PREF,
+                                    buildPendingOrderJson(quantity, gallonType, totalAmount)
+                                )
+                                .apply()
                             Toast.makeText(
                                 this,
                                 "Complete GCash payment, then tap Place Order again.",
@@ -183,7 +199,7 @@ class OrderFormPage : AppCompatActivity() {
                 placeOrderButton.isEnabled = true
                 result.onSuccess { (order, _) ->
                     if (paymentMethod == "GCASH") {
-                        prefs.edit().remove(GCASH_PENDING_INTENT_PREF).apply()
+                        clearPendingGcashOrder(prefs)
                     }
                     Toast.makeText(
                         this,
@@ -203,4 +219,87 @@ class OrderFormPage : AppCompatActivity() {
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
         startActivity(intent)
     }
+
+    private fun maybeFinalizePendingGcashOrder() {
+        if (isAutoFinalizingGcashOrder) return
+        val prefs = getSharedPreferences("auth", MODE_PRIVATE)
+        val pendingIntentId = prefs.getString(GCASH_PENDING_INTENT_PREF, null)
+        val pendingOrderJson = prefs.getString(GCASH_PENDING_ORDER_PREF, null)
+        if (pendingIntentId.isNullOrBlank() || pendingOrderJson.isNullOrBlank()) return
+
+        val pendingOrder = parsePendingGcashOrder(pendingOrderJson)
+        if (pendingOrder == null) {
+            clearPendingGcashOrder(prefs)
+            return
+        }
+
+        val token = prefs.getString("token", null)
+        if (token.isNullOrBlank()) {
+            Toast.makeText(this, "Session expired. Please log in again.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        isAutoFinalizingGcashOrder = true
+        placeOrderButton.isEnabled = false
+        Toast.makeText(this, "Finalizing pending GCash payment...", Toast.LENGTH_SHORT).show()
+
+        val payload = CreateOrderPayload(
+            waterQuantity = pendingOrder.quantity,
+            gallonType = pendingOrder.gallonType,
+            totalAmount = pendingOrder.totalAmount,
+            paymentMethod = "GCASH",
+            gcashPaymentIntentId = pendingIntentId
+        )
+
+        OrderApi.createOrder(token, payload) { result ->
+            runOnUiThread {
+                placeOrderButton.isEnabled = true
+                isAutoFinalizingGcashOrder = false
+                result.onSuccess { (order, _) ->
+                    clearPendingGcashOrder(prefs)
+                    Toast.makeText(
+                        this,
+                        "Order ${order.orderCode ?: order.id} placed.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    finish()
+                }.onFailure {
+                    Toast.makeText(
+                        this,
+                        it.message ?: "Failed to finalize GCash order. Tap Place Order to try again.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+    }
+
+    private fun buildPendingOrderJson(quantity: Int, gallonType: String, totalAmount: Double): String {
+        return JSONObject().apply {
+            put("quantity", quantity)
+            put("gallon_type", gallonType)
+            put("total_amount", totalAmount)
+        }.toString()
+    }
+
+    private fun parsePendingGcashOrder(json: String): PendingGcashOrder? {
+        return try {
+            val root = JSONObject(json)
+            val qty = root.optInt("quantity", -1).takeIf { it > 0 } ?: return null
+            val gallonType = root.optString("gallon_type", "ROUND").takeIf { it.isNotBlank() } ?: "ROUND"
+            val total = root.optDouble("total_amount", -1.0).takeIf { it >= 0 } ?: return null
+            PendingGcashOrder(qty, gallonType, total)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun clearPendingGcashOrder(prefs: SharedPreferences) {
+        prefs.edit()
+            .remove(GCASH_PENDING_INTENT_PREF)
+            .remove(GCASH_PENDING_ORDER_PREF)
+            .apply()
+    }
+
+    private data class PendingGcashOrder(val quantity: Int, val gallonType: String, val totalAmount: Double)
 }

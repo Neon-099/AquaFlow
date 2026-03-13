@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!--Logo Color-->
+    <color name="logo_color">#e0eefd</color>
     <!-- Primary Brand Colors -->
     <color name="primary">#4682B4</color>
     <color name="primary_light">#6D9CCB</color>

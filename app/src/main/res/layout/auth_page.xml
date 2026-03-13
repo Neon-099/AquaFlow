@@ -25,7 +25,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="Aqua Connect"
+                android:text="Aqua Flow"
                 android:textColor="#2196F3"
                 android:textSize="28sp"
                 android:textStyle="bold" />

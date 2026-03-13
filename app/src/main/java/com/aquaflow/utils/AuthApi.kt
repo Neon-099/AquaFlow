@@ -213,6 +213,72 @@ object AuthApi {
         })
     }
 
+    fun forgotPassword(email: String, callback: (Result<String?>) -> Unit) {
+        val body = JSONObject()
+            .put("email", email)
+            .toString()
+
+        val request = Request.Builder()
+            .url("$BASE_URL/api/v1/auth/forgotpassword")
+            .post(body.toRequestBody(jsonMediaType))
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                callback(Result.failure(e))
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                response.use {
+                    val raw = it.body?.string()
+                    if (!it.isSuccessful) {
+                        callback(Result.failure(Exception(extractMessage(raw) ?: "Could not send reset email")))
+                        return
+                    }
+                    val message = try {
+                        JSONObject(raw ?: "{}").optString("message", null)
+                    } catch (_: JSONException) {
+                        null
+                    }
+                    callback(Result.success(message))
+                }
+            }
+        })
+    }
+
+    fun resetPassword(resetToken: String, newPassword: String, callback: (Result<String?>) -> Unit) {
+        val body = JSONObject()
+            .put("password", newPassword)
+            .toString()
+
+        val request = Request.Builder()
+            .url("$BASE_URL/api/v1/auth/resetpassword/$resetToken")
+            .put(body.toRequestBody(jsonMediaType))
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                callback(Result.failure(e))
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                response.use {
+                    val raw = it.body?.string()
+                    if (!it.isSuccessful) {
+                        callback(Result.failure(Exception(extractMessage(raw) ?: "Reset failed")))
+                        return
+                    }
+                    val message = try {
+                        JSONObject(raw ?: "{}").optString("message", null)
+                    } catch (_: JSONException) {
+                        null
+                    }
+                    callback(Result.success(message))
+                }
+            }
+        })
+    }
+
     private fun enqueue(request: Request, fallbackEmail: String, callback: (Result<AuthResult>) -> Unit) {
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {

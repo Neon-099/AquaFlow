@@ -72,6 +72,7 @@ class AquaFlowFirebaseMessagingService : FirebaseMessagingService() {
         }
 
         NotificationManagerCompat.from(this).notify(
+
             System.currentTimeMillis().toInt(),
             notification
         )

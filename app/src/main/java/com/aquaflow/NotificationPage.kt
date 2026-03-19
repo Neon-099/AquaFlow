@@ -154,6 +154,14 @@ class NotificationPage : AppCompatActivity() {
                 btnMark.setOnClickListener { markOneRead(row) }
             }
 
+            itemView.setOnClickListener {
+                if (row.type != "message" && !row.orderId.isNullOrBlank()) {
+                    val intent = Intent(this, OrderTrackingPage::class.java)
+                    intent.putExtra("order_id", row.orderId)
+                    startActivity(intent)
+                }
+            }
+
             notificationsContainer.addView(itemView)
         }
     }

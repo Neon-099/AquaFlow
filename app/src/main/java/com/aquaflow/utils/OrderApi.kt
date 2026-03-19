@@ -27,6 +27,7 @@ data class MobileOrder (
 data class MobileOrderDetails(
     val order: MobileOrder,
     val riderName: String?,
+    val riderPhone: String?,
     val paymentProviderStatus: String?
 )
 
@@ -199,8 +200,9 @@ object OrderApi {
                         val data = JSONObject(raw).getJSONObject("data")
                         val order = parseOrder(data.getJSONObject("order"))
                         val riderName = data.optJSONObject("rider")?.optString("name", null)
+                        val riderPhone = data.optJSONObject("rider")?.optString("phone", null)
                         val paymentStatus = data.optJSONObject("payment")?.optString("status", null)
-                        callback(Result.success(MobileOrderDetails(order, riderName, paymentStatus)))
+                        callback(Result.success(MobileOrderDetails(order, riderName, riderPhone, paymentStatus)))
                     } catch (e: Exception) {
                         callback(Result.failure(e))
                     }

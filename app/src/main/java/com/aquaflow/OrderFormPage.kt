@@ -11,6 +11,7 @@ import android.widget.ImageButton
 import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.view.isVisible
 
 import com.aquaflow.utils.CreateOrderPayload
 import com.aquaflow.utils.OrderApi
@@ -118,6 +119,15 @@ class OrderFormPage : AppCompatActivity() {
         val selectedPaymentId = findViewById<RadioGroup>(R.id.rgPaymentMethod).checkedRadioButtonId
         val vatFee = if (selectedPaymentId == R.id.rbGcash) GCASH_VAT_FEE else 0.0
         val totalPrice = subtotal + DELIVERY_FEE + vatFee
+
+        //INIT THE TEXT
+        val gcashTextView = findViewById<TextView>(R.id.tvGcashMOP)
+        if(selectedPaymentId === R.id.rbGcash){
+            gcashTextView.isVisible = true
+            gcashTextView.text = String.format("₱ %.2f", vatFee)
+        }else{
+            gcashTextView.isVisible = false
+        }
         findViewById<TextView>(R.id.tvTotalPrice).text = String.format("₱ %.2f", totalPrice)
     }
 

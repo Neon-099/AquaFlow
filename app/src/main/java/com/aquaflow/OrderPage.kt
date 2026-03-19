@@ -8,6 +8,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.widget.NestedScrollView
 import com.aquaflow.ui.OrderStatusBadgeMapper
 import com.aquaflow.utils.MobileOrder
 import com.aquaflow.utils.OrderApi
@@ -20,6 +21,14 @@ class OrderPage : AppCompatActivity() {
     private lateinit var tvSeeAllOrders: TextView
     private lateinit var btnNewOrder: MaterialButton
     private lateinit var loadingOverlay: View
+    private lateinit var scrollContent: NestedScrollView
+
+    private val pageSize = 5
+    private var showAllOrders = false
+    private var visibleActiveCount = pageSize
+    private var visibleRecentCount = pageSize
+    private val activeOrders = mutableListOf<MobileOrder>()
+    private val recentOrders = mutableListOf<MobileOrder>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +56,22 @@ class OrderPage : AppCompatActivity() {
         tvSeeAllOrders = findViewById(R.id.tvSeeAllOrders)
         btnNewOrder = findViewById(R.id.btnNewOrder)
         loadingOverlay = findViewById(R.id.loadingOverlay)
+        scrollContent = findViewById(R.id.scrollContent)
+
+        scrollContent.setOnScrollChangeListener { _, _, scrollY, _, _ ->
+            val view = scrollContent.getChildAt(0)
+            if (view != null && scrollY >= (view.measuredHeight - scrollContent.measuredHeight - 12)) {
+                loadMoreIfPossible()
+            }
+        }
+
+        tvSeeAllOrders.setOnClickListener {
+            showAllOrders = !showAllOrders
+            resetVisibleCounts()
+            renderActiveOrdersFromApi(activeOrders)
+            renderRecentActivityFromApi(recentOrders)
+            updateSeeAllLabel()
+        }
     }
 
     private fun loadOrdersFromBackend() {
@@ -61,11 +86,14 @@ class OrderPage : AppCompatActivity() {
         OrderApi.listMyOrders(token) { result ->
             runOnUiThread {
                 result.onSuccess { all ->
-                    val active = all.filter { !isTerminalStatus(it.status) }
-                    val history = all.filter { isTerminalStatus(it.status) }
-                    renderActiveOrdersFromApi(active)
-                    renderRecentActivityFromApi(history)
-                    tvSeeAllOrders.visibility = if (active.size > 5) View.VISIBLE else View.GONE
+                    activeOrders.clear()
+                    recentOrders.clear()
+                    activeOrders.addAll(all.filter { !isTerminalStatus(it.status) })
+                    recentOrders.addAll(all.filter { isTerminalStatus(it.status) })
+                    resetVisibleCounts()
+                    renderActiveOrdersFromApi(activeOrders)
+                    renderRecentActivityFromApi(recentOrders)
+                    updateSeeAllLabel()
                     setLoading(false)
                 }.onFailure {
                     Toast.makeText(this, it.message ?: "Unable to load orders", Toast.LENGTH_LONG).show()
@@ -78,7 +106,8 @@ class OrderPage : AppCompatActivity() {
     private fun renderActiveOrdersFromApi(orders: List<MobileOrder>) {
         activeOrdersContainer.removeAllViews()
 
-        for (order in orders.take(5)) {
+        val visible = if (showAllOrders) orders.take(visibleActiveCount) else orders.take(pageSize)
+        for (order in visible) {
             val itemView = layoutInflater.inflate(R.layout.item_order_card, activeOrdersContainer, false)
 
             val tvOrderTitle = itemView.findViewById<TextView>(R.id.tvOrderTitle)
@@ -106,12 +135,14 @@ class OrderPage : AppCompatActivity() {
 
             activeOrdersContainer.addView(itemView)
         }
+
     }
 
     private fun renderRecentActivityFromApi(history: List<MobileOrder>) {
         recentActivityContainer.removeAllViews()
 
-        for (order in history.take(5)) {
+        val visible = if (showAllOrders) history.take(visibleRecentCount) else history.take(pageSize)
+        for (order in visible) {
             val itemView = layoutInflater.inflate(R.layout.item_recent_activity, recentActivityContainer, false)
 
             val icon = itemView.findViewById<ImageView>(R.id.ivActivityIcon)
@@ -142,6 +173,7 @@ class OrderPage : AppCompatActivity() {
 
             recentActivityContainer.addView(itemView)
         }
+
     }
 
     private fun applyOrderActionButtons(
@@ -200,6 +232,36 @@ class OrderPage : AppCompatActivity() {
     private fun isTerminalStatus(status: String): Boolean {
         val s = status.uppercase()
         return s == "COMPLETED" || s == "CANCELLED"
+    }
+
+    private fun resetVisibleCounts() {
+        visibleActiveCount = pageSize
+        visibleRecentCount = pageSize
+    }
+
+    private fun updateSeeAllLabel() {
+        val shouldShow = activeOrders.size > pageSize || recentOrders.size > pageSize
+        tvSeeAllOrders.visibility = if (shouldShow) View.VISIBLE else View.GONE
+        if (shouldShow) {
+            tvSeeAllOrders.text = if (showAllOrders) "Collapse Orders" else "See All Orders"
+        }
+    }
+
+    private fun loadMoreIfPossible() {
+        if (!showAllOrders) return
+        var changed = false
+        if (visibleActiveCount < activeOrders.size) {
+            visibleActiveCount = (visibleActiveCount + pageSize).coerceAtMost(activeOrders.size)
+            changed = true
+        }
+        if (visibleRecentCount < recentOrders.size) {
+            visibleRecentCount = (visibleRecentCount + pageSize).coerceAtMost(recentOrders.size)
+            changed = true
+        }
+        if (changed) {
+            renderActiveOrdersFromApi(activeOrders)
+            renderRecentActivityFromApi(recentOrders)
+        }
     }
 
     private fun formatDisplayDate(raw: String?): String {

@@ -34,12 +34,15 @@ class AuthPage : AppCompatActivity() {
     private val ivTogglePassword by lazy { findViewById<ImageView>(R.id.iv_toggle_passwords) }
     private val ivToggleConfirmPassword by lazy { findViewById<ImageView>(R.id.iv_toggle_confirm_passwords) }
     private val confirmPasswordContainer by lazy { findViewById<FrameLayout>(R.id.confirm_password_container) }
+    private val nameHint by lazy { findViewById<TextView>(R.id.label_name_hint) }
+    private val emailHint by lazy { findViewById<TextView>(R.id.label_email_hint) }
 
     // Sign-up Specific Labels (for visibility toggling)
     private val signupLabels by lazy {
         listOf(
             findViewById<TextView>(R.id.label_name),
             etName,
+            nameHint,
             findViewById<TextView>(R.id.label_phone),
             etPhone,
             findViewById<TextView>(R.id.label_address),
@@ -58,6 +61,8 @@ class AuthPage : AppCompatActivity() {
         setContentView(R.layout.auth_page)
 
         etPhone.filters = arrayOf(InputFilter.LengthFilter(11))
+        etEmail.filters = arrayOf(InputFilter.LengthFilter(30))
+        etName.filters = arrayOf(InputFilter.LengthFilter(30))
 
         setupListeners()
         toggleUIState(true) // Default to Login
@@ -83,6 +88,22 @@ class AuthPage : AppCompatActivity() {
             isConfirmPasswordVisible = !isConfirmPasswordVisible
             updatePasswordVisibility(etConfirmPassword, ivToggleConfirmPassword, isConfirmPasswordVisible)
         }
+        etName.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                val len = s?.toString()?.trim()?.length ?: 0
+                nameHint.visibility = if (len in 1..5 || len > 30) View.VISIBLE else View.GONE
+            }
+        })
+        etEmail.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                val len = s?.toString()?.trim()?.length ?: 0
+                emailHint.visibility = if (len in 1..5 || len > 30) View.VISIBLE else View.GONE
+            }
+        })
     }
 
     // --- UI Rendering Logic ---
@@ -110,6 +131,9 @@ class AuthPage : AppCompatActivity() {
         // Toggle Sign-up Fields
         val visibility = if (isLogin) View.GONE else View.VISIBLE
         signupLabels.forEach { it.visibility = visibility }
+        if (isLogin) {
+            nameHint.visibility = View.GONE
+        }
     }
 
     // --- Business & Validation Logic ---
@@ -120,6 +144,10 @@ class AuthPage : AppCompatActivity() {
         val password = etPassword.text.toString().trim()
 
         // Common Validation
+        if (email.length < 6 || email.length > 30) {
+            etEmail.error = "Email must be 6-30 characters"
+            return
+        }
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             etEmail.error = "Please enter a valid email address"
             return
@@ -128,6 +156,11 @@ class AuthPage : AppCompatActivity() {
         if (!isLoginMode) {
             val strongPassword = Regex("^(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,}$")
             if (etName.text.isBlank()) { etName.error = "Name is required"; return }
+            val nameValue = etName.text.toString().trim()
+            if (nameValue.length < 6 || nameValue.length > 30) {
+                etName.error = "Name must be 6-30 characters"
+                return
+            }
             if (etPhone.text.isBlank()) { etPhone.error = "Phone number is required"; return }
             val phone = etPhone.text.toString().trim()
             if (!phone.matches(Regex("^\\d{11}$"))) {

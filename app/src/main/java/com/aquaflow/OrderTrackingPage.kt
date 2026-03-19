@@ -24,6 +24,12 @@ class OrderTrackingPage : AppCompatActivity() {
     private lateinit var tvLastUpdated: TextView
     private lateinit var btnBack: ImageButton
     private lateinit var loadingOverlay: View
+    private lateinit var tvOrderAddress: TextView
+    private lateinit var tvOrderQuantity: TextView
+    private lateinit var tvOrderPaymentMethod: TextView
+    private lateinit var tvOrderGallonType: TextView
+    private lateinit var tvOrderRiderName: TextView
+    private lateinit var tvOrderRiderPhone: TextView
 
     private val pollHandler = Handler(Looper.getMainLooper())
     private var orderId: String = ""
@@ -42,7 +48,7 @@ class OrderTrackingPage : AppCompatActivity() {
         TrackingStep("Refilling In Progress", "Station is refilling your order", R.drawable.ic_processes, "PICKED_UP", "#8B5CF6"),
         TrackingStep("Delivery In Progress", "Rider is en route to you", R.drawable.ic_delivery_truck, "OUT_FOR_DELIVERY", "#F59E0B"),
         TrackingStep("Delivered", "Rider marked order as delivered", R.drawable.ic_delivered, "DELIVERED", "#06B6D4"),
-        TrackingStep("Pending Payment", "Awaiting COD/GCASH confirmation", R.drawable.ic_payment, "PENDING_PAYMENT", "#F43F5E"),
+        TrackingStep("Pending Payment", "Awaiting COD confirmation", R.drawable.ic_payment, "PENDING_PAYMENT", "#F43F5E"),
         TrackingStep("Completed", "Order fulfilled and closed", R.drawable.ic_check_circle, "COMPLETED", "#059669")
     )
 
@@ -90,6 +96,12 @@ class OrderTrackingPage : AppCompatActivity() {
         tvLastUpdated = findViewById(R.id.tvLastUpdated)
         btnBack = findViewById(R.id.btnBack)
         loadingOverlay = findViewById(R.id.loadingOverlay)
+        tvOrderAddress = findViewById(R.id.tvOrderAddress)
+        tvOrderQuantity = findViewById(R.id.tvOrderQuantity)
+        tvOrderPaymentMethod = findViewById(R.id.tvOrderPaymentMethod)
+        tvOrderGallonType = findViewById(R.id.tvOrderGallonType)
+        tvOrderRiderName = findViewById(R.id.tvOrderRiderName)
+        tvOrderRiderPhone = findViewById(R.id.tvOrderRiderPhone)
 
         btnBack.setOnClickListener { finish() }
     }
@@ -108,6 +120,12 @@ class OrderTrackingPage : AppCompatActivity() {
                     val order = details.order
                     val code = order.orderCode ?: order.id.takeLast(6)
                     tvOrderNumber.text = "Order #$code"
+                    tvOrderAddress.text = order.customerAddress?.takeIf { it.isNotBlank() } ?: "Address unavailable"
+                    tvOrderQuantity.text = "${order.quantity} gallons"
+                    tvOrderPaymentMethod.text = formatPaymentMethod(order.paymentMethod)
+                    tvOrderGallonType.text = formatGallonType(order.gallonType)
+                    tvOrderRiderName.text = details.riderName?.takeIf { it.isNotBlank() } ?: "Unassigned"
+                    tvOrderRiderPhone.text = details.riderPhone?.takeIf { it.isNotBlank() } ?: "Not available"
 
                     tvArrivingIn.text = when {
                         !order.etaText.isNullOrBlank() -> "Arriving in ${order.etaText}"
@@ -204,6 +222,22 @@ class OrderTrackingPage : AppCompatActivity() {
             Color.parseColor(hex)
         } catch (_: Exception) {
             Color.parseColor(fallbackHex)
+        }
+    }
+
+    private fun formatPaymentMethod(method: String?): String {
+        return when (method?.uppercase(Locale.ROOT)) {
+            "GCASH" -> "GCash"
+            "COD" -> "Cash on Delivery"
+            else -> method?.uppercase(Locale.ROOT) ?: "Not set"
+        }
+    }
+
+    private fun formatGallonType(type: String?): String {
+        return when (type?.uppercase(Locale.ROOT)) {
+            "SLIM" -> "Slim gallon"
+            "ROUND" -> "Round gallon"
+            else -> type?.uppercase(Locale.ROOT) ?: "Not set"
         }
     }
 

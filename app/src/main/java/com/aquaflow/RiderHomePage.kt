@@ -7,6 +7,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.widget.NestedScrollView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.aquaflow.utils.MobileOrder
@@ -21,6 +22,7 @@ class RiderHomePage : AppCompatActivity() {
     private lateinit var rvNewOrders: RecyclerView
     private lateinit var emptyNewOrders: LinearLayout
     private lateinit var loadingOverlay: View
+    private lateinit var scrollContent: NestedScrollView
 
     private lateinit var cardBulkConfirmPickup: View
     private lateinit var cardBulkStartDelivery: View
@@ -39,6 +41,20 @@ class RiderHomePage : AppCompatActivity() {
     private val allOrders = mutableListOf<MobileOrder>()
     private val selectedConfirmIds = mutableSetOf<String>()
     private val selectedDispatchIds = mutableSetOf<String>()
+    private val pageSize = 6
+    private var visibleActiveCount = pageSize
+    private var visibleNewCount = pageSize
+
+    private val statusOrder = mapOf(
+        "PENDING" to 0,
+        "CONFIRMED" to 1,
+        "PICKED_UP" to 2,
+        "OUT_FOR_DELIVERY" to 3,
+        "DELIVERED" to 4,
+        "PENDING_PAYMENT" to 5,
+        "COMPLETED" to 6,
+        "CANCELLED" to 7
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,6 +77,14 @@ class RiderHomePage : AppCompatActivity() {
         rvNewOrders = findViewById(R.id.rvNewOrders)
         emptyNewOrders = findViewById(R.id.emptyNewOrders)
         loadingOverlay = findViewById(R.id.loadingOverlay)
+        scrollContent = findViewById(R.id.scrollContent)
+
+        scrollContent.setOnScrollChangeListener { _, _, scrollY, _, _ ->
+            val view = scrollContent.getChildAt(0)
+            if (view != null && scrollY >= (view.measuredHeight - scrollContent.measuredHeight - 12)) {
+                loadMoreIfPossible()
+            }
+        }
 
         cardBulkConfirmPickup = findViewById(R.id.cardBulkConfirmPickup)
         cardBulkStartDelivery = findViewById(R.id.cardBulkStartDelivery)
@@ -72,6 +96,7 @@ class RiderHomePage : AppCompatActivity() {
         btnStartDeliverySelectAll = findViewById(R.id.btnStartDeliverySelectAll)
         btnStartDeliveryClear = findViewById(R.id.btnStartDeliveryClear)
         btnStartDeliveryBulk = findViewById(R.id.btnStartDeliveryBulk)
+
 
         val name = getSharedPreferences("auth", MODE_PRIVATE).getString("name", null)
         tvRiderName.text = if (name.isNullOrBlank()) "Rider" else name
@@ -109,6 +134,7 @@ class RiderHomePage : AppCompatActivity() {
                 result.onSuccess { orders ->
                     allOrders.clear()
                     allOrders.addAll(orders)
+                    resetVisibleCounts()
                     pruneSelections()
                     renderLists()
                     setLoading(false)
@@ -122,13 +148,19 @@ class RiderHomePage : AppCompatActivity() {
 
     private fun renderLists() {
         val activeOrders = allOrders.filter { isActiveAssigned(it) }
+            .sortedWith(compareBy<MobileOrder> { statusRank(it.status) }.thenByDescending { it.createdAt ?: "" })
         val availableOrders = allOrders.filter { isAvailableOrder(it) }
+            .sortedWith(compareBy<MobileOrder> { statusRank(it.status) }.thenByDescending { it.createdAt ?: "" })
 
-        activeAdapter.submitList(activeOrders.map { DisplayItem.OrderItem(it) }, selectedConfirmIds, selectedDispatchIds)
-        newAdapter.submitList(availableOrders.map { DisplayItem.OrderItem(it) })
+        val visibleActive = activeOrders.take(visibleActiveCount)
+        val visibleNew = availableOrders.take(visibleNewCount)
+
+        activeAdapter.submitList(visibleActive.map { DisplayItem.OrderItem(it) }, selectedConfirmIds, selectedDispatchIds)
+        newAdapter.submitList(visibleNew.map { DisplayItem.OrderItem(it) })
 
         emptyNewOrders.visibility = if (availableOrders.isEmpty()) View.VISIBLE else View.GONE
         updateBulkCards(activeOrders)
+
     }
 
     private fun isActiveAssigned(order: MobileOrder): Boolean {
@@ -286,6 +318,36 @@ class RiderHomePage : AppCompatActivity() {
     private fun isTerminalStatus(status: String): Boolean {
         val s = status.uppercase()
         return s == "COMPLETED" || s == "CANCELLED"
+    }
+
+    private fun statusRank(status: String): Int {
+        return statusOrder[status.uppercase()] ?: 999
+    }
+
+    private fun resetVisibleCounts() {
+        visibleActiveCount = pageSize
+        visibleNewCount = pageSize
+    }
+
+    private fun loadMoreIfPossible() {
+        val activeOrders = allOrders.filter { isActiveAssigned(it) }
+            .sortedWith(compareBy<MobileOrder> { statusRank(it.status) }.thenByDescending { it.createdAt ?: "" })
+        val availableOrders = allOrders.filter { isAvailableOrder(it) }
+            .sortedWith(compareBy<MobileOrder> { statusRank(it.status) }.thenByDescending { it.createdAt ?: "" })
+
+        var changed = false
+        if (visibleActiveCount < activeOrders.size) {
+            visibleActiveCount = (visibleActiveCount + pageSize).coerceAtMost(activeOrders.size)
+            changed = true
+        }
+        if (visibleNewCount < availableOrders.size) {
+            visibleNewCount = (visibleNewCount + pageSize).coerceAtMost(availableOrders.size)
+            changed = true
+        }
+
+        if (changed) {
+            renderLists()
+        }
     }
 
     private fun setupBottomNav() {

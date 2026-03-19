@@ -10,7 +10,7 @@
     <View
             android:id="@+id/headerBackground"
             android:layout_width="match_parent"
-            android:layout_height="150dp"
+            android:layout_height="130dp"
             android:background="@drawable/bg_header_gradient"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -19,7 +19,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_marginStart="8dp"
-            android:layout_marginTop="48dp"
+            android:layout_marginTop="18dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_arrow_back"
             android:contentDescription="Back"
@@ -85,17 +85,240 @@
     <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="0dp"
+            android:fillViewport="true"
             app:layout_constraintBottom_toTopOf="@id/footer"
             app:layout_constraintTop_toBottomOf="@id/orderHeader">
 
         <LinearLayout
-                android:id="@+id/trackingStepContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:paddingHorizontal="20dp"
-                android:paddingTop="24dp"
-                android:paddingBottom="24dp" />
+                android:paddingTop="20dp"
+                android:paddingBottom="24dp">
+
+            <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardOrderDetails"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="18dp"
+                    app:cardBackgroundColor="@color/surface_white"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="3dp"
+                    app:strokeColor="@color/border_light"
+                    app:strokeWidth="1dp">
+
+                <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                    <TextView
+                            android:id="@+id/tvOrderDetailsTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Order Details"
+                            android:textColor="@color/text_primary"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:fontFamily="sans-serif-medium" />
+
+                    <TextView
+                            android:id="@+id/tvOrderDetailsSubtitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Everything you need to know about this order."
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp"
+                            android:fontFamily="sans-serif" />
+
+                    <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:orientation="vertical">
+
+                        <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:paddingVertical="6dp">
+                            <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Delivery address"
+                                    android:textColor="@color/text_tertiary"
+                                    android:textSize="11sp"
+                                    android:textStyle="bold"
+                                    android:fontFamily="sans-serif" />
+                            <TextView
+                                    android:id="@+id/tvOrderAddress"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="Address"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="14sp"
+                                    android:fontFamily="sans-serif" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:orientation="horizontal">
+
+                            <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical"
+                                    android:paddingVertical="6dp">
+                                <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Quantity"
+                                        android:textColor="@color/text_tertiary"
+                                        android:textSize="11sp"
+                                        android:textStyle="bold"
+                                        android:fontFamily="sans-serif" />
+                                <TextView
+                                        android:id="@+id/tvOrderQuantity"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="0 gallons"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="14sp"
+                                        android:fontFamily="sans-serif" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical"
+                                    android:paddingVertical="6dp">
+                                <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Gallon type"
+                                        android:textColor="@color/text_tertiary"
+                                        android:textSize="11sp"
+                                        android:textStyle="bold"
+                                        android:fontFamily="sans-serif" />
+                                <TextView
+                                        android:id="@+id/tvOrderGallonType"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Type"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="14sp"
+                                        android:fontFamily="sans-serif" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:orientation="horizontal">
+
+                            <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical"
+                                    android:paddingVertical="6dp">
+                                <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Payment method"
+                                        android:textColor="@color/text_tertiary"
+                                        android:textSize="11sp"
+                                        android:textStyle="bold"
+                                        android:fontFamily="sans-serif" />
+                                <TextView
+                                        android:id="@+id/tvOrderPaymentMethod"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Method"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="14sp"
+                                        android:fontFamily="sans-serif" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical"
+                                    android:paddingVertical="6dp">
+                                <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Assigned rider"
+                                        android:textColor="@color/text_tertiary"
+                                        android:textSize="11sp"
+                                        android:textStyle="bold"
+                                        android:fontFamily="sans-serif" />
+                                <TextView
+                                        android:id="@+id/tvOrderRiderName"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Unassigned"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="14sp"
+                                        android:fontFamily="sans-serif" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:orientation="vertical"
+                                android:paddingVertical="6dp">
+                            <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Rider phone"
+                                    android:textColor="@color/text_tertiary"
+                                    android:textSize="11sp"
+                                    android:textStyle="bold"
+                                    android:fontFamily="sans-serif" />
+                            <TextView
+                                    android:id="@+id/tvOrderRiderPhone"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Not available"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="14sp"
+                                    android:fontFamily="sans-serif" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                    android:id="@+id/tvTrackingHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="Order Progress"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif"
+                    android:letterSpacing="0.08" />
+
+            <LinearLayout
+                    android:id="@+id/trackingStepContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingBottom="24dp" />
+        </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
     <LinearLayout

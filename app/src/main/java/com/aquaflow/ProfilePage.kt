@@ -266,6 +266,14 @@ class ProfilePage : AppCompatActivity() {
         val nameInput = android.widget.EditText(this).apply {
             setText(currentName)
             hint = "Full name"
+            filters = arrayOf(android.text.InputFilter.LengthFilter(30))
+        }
+        val nameHint = TextView(this).apply {
+            text = "Name must be 6–30 characters"
+            setTextColor(android.graphics.Color.parseColor("#DC2626"))
+            textSize = 12f
+            setPadding(0, 6, 0, 0)
+            visibility = View.GONE
         }
 
         val phoneInput = android.widget.EditText(this).apply {
@@ -275,7 +283,17 @@ class ProfilePage : AppCompatActivity() {
         }
 
         container.addView(nameInput)
+        container.addView(nameHint)
         container.addView(phoneInput)
+
+        nameInput.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                val len = s?.toString()?.trim()?.length ?: 0
+                nameHint.visibility = if (len in 1..5 || len > 30) View.VISIBLE else View.GONE
+            }
+        })
 
         AlertDialog.Builder(this)
             .setTitle("Edit Name & Phone")
@@ -284,6 +302,10 @@ class ProfilePage : AppCompatActivity() {
                 val name = nameInput.text.toString().trim()
                 val phone = phoneInput.text.toString().trim()
                 if (name.isBlank() && phone.isBlank()) return@setPositiveButton
+                if (name.isNotBlank() && (name.length < 6 || name.length > 30)) {
+                    Toast.makeText(this, "Name must be between 6 and 30 characters", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
                 if (phone.isNotBlank() && !phone.matches(Regex("^\\d{11}$"))) {
                     Toast.makeText(this, "Phone number must be exactly 11 digits", Toast.LENGTH_SHORT).show()
                     return@setPositiveButton

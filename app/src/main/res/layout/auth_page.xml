@@ -80,6 +80,15 @@
                     android:text="Full Name"
                     android:textColor="#000000" android:textSize="12sp" android:visibility="gone"/>
             <EditText android:id="@+id/et_name" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Alex Johnson" android:background="@null" android:paddingVertical="12dp" android:visibility="gone" android:drawablePadding="10dp" android:textSize="16sp"/>
+            <TextView
+                    android:id="@+id/label_name_hint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Name must be 6–30 characters"
+                    android:textColor="#DC2626"
+                    android:textSize="11sp"
+                    android:visibility="gone"
+                    android:layout_marginBottom="8dp"/>
 
             <TextView
                     android:id="@+id/label_main"
@@ -88,6 +97,15 @@
                     android:text="Email"
                     android:textColor="#000000" android:textSize="12sp" />
             <EditText android:id="@+id/et_email" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="user@example.com" android:background="@null" android:paddingVertical="12dp" android:drawablePadding="10dp" android:textSize="16sp"/>
+            <TextView
+                    android:id="@+id/label_email_hint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Email must be 6–30 characters"
+                    android:textColor="#DC2626"
+                    android:textSize="11sp"
+                    android:visibility="gone"
+                    android:layout_marginBottom="8dp"/>
 
             <TextView
                     android:id="@+id/label_phone"

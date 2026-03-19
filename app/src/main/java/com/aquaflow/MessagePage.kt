@@ -2,6 +2,8 @@ package com.aquaflow
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -32,6 +34,11 @@ class MessagePage : AppCompatActivity() {
     private val allConversations = mutableListOf<ConversationRow>()
     private var activeFilter: String = "All"
     private var currentQuery: String = ""
+    private val pageSize = 12
+    private var visibleCount = pageSize
+    private val searchHandler = Handler(Looper.getMainLooper())
+    private var searchRunnable: Runnable? = null
+    private val searchDebounceMs = 350L
     private var socket: Socket? = null
     private var myUserId: String? = null
     private val isoWithMillis = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX", Locale.US).apply {
@@ -54,6 +61,7 @@ class MessagePage : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
         setContentView(R.layout.page_message)
 
@@ -65,6 +73,13 @@ class MessagePage : AppCompatActivity() {
         btnFilterRiders = findViewById(R.id.btnFilterRiders)
         btnToggleArchive = findViewById(R.id.btnToggleArchive)
         tvArchiveBanner = findViewById(R.id.tvArchiveBanner)
+        val scrollView = findViewById<androidx.core.widget.NestedScrollView>(R.id.messagesContainer)?.parent as? androidx.core.widget.NestedScrollView
+        scrollView?.setOnScrollChangeListener { _, _, scrollY, _, _ ->
+            val view = scrollView.getChildAt(0)
+            if (view != null && scrollY >= (view.measuredHeight - scrollView.measuredHeight - 12)) {
+                loadMoreIfPossible()
+            }
+        }
         myUserId = getSharedPreferences("auth", MODE_PRIVATE).getString("userId", null)
         setupBottomNav()
         setupFilters()
@@ -83,6 +98,7 @@ class MessagePage : AppCompatActivity() {
         super.onDestroy()
         socket?.disconnect()
         socket = null
+        searchRunnable?.let(searchHandler::removeCallbacks)
     }
 
     private fun loadConversations() {
@@ -99,6 +115,7 @@ class MessagePage : AppCompatActivity() {
                 result.onSuccess { rows ->
                     allConversations.clear()
                     allConversations.addAll(rows)
+                    resetVisibleCount()
                     applyFilters()
                     setLoading(false)
                 }.onFailure {
@@ -112,7 +129,9 @@ class MessagePage : AppCompatActivity() {
     private fun renderMessages(data: List<ConversationRow>) {
         messagesContainer.removeAllViews()
 
-        for (row in data) {
+        val visible = data.take(visibleCount)
+
+        for (row in visible) {
             val itemView = layoutInflater.inflate(R.layout.item_message_row, messagesContainer, false)
 
             val tvSender = itemView.findViewById<TextView>(R.id.tvSenderName)
@@ -129,9 +148,9 @@ class MessagePage : AppCompatActivity() {
             tvTime.text = formatRecentTime(row.lastMessageAt)
             tvSenderInitial.text = buildInitials(row.counterpartyName)
 
-            if (!row.orderId.isNullOrBlank()) {
+            if (!row.orderCode.isNullOrBlank()) {
                 tvOrderBadge.visibility = View.VISIBLE
-                tvOrderBadge.text = "Order #${row.orderId.takeLast(6)}"
+                tvOrderBadge.text = "#${row.orderCode}"
             } else {
                 tvOrderBadge.visibility = View.GONE
             }
@@ -202,8 +221,14 @@ class MessagePage : AppCompatActivity() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
             override fun afterTextChanged(s: android.text.Editable?) {
-                currentQuery = s?.toString().orEmpty().trim()
-                applyFilters()
+                val nextQuery = s?.toString().orEmpty().trim()
+                searchRunnable?.let(searchHandler::removeCallbacks)
+                searchRunnable = Runnable {
+                    currentQuery = nextQuery
+                    resetVisibleCount()
+                    applyFilters()
+                }
+                searchHandler.postDelayed(searchRunnable!!, searchDebounceMs)
             }
         })
 
@@ -219,6 +244,7 @@ class MessagePage : AppCompatActivity() {
     private fun setFilter(filter: String) {
         activeFilter = filter
         updateFilterStyles()
+        resetVisibleCount()
         applyFilters()
     }
 
@@ -258,7 +284,7 @@ class MessagePage : AppCompatActivity() {
         if (query.isNotBlank()) {
             base = base.filter {
                 val name = it.counterpartyName.lowercase()
-                val order = it.orderId?.lowercase().orEmpty()
+                val order = it.orderCode?.lowercase().orEmpty()
                 val last = it.lastMessage?.lowercase().orEmpty()
                 name.contains(query) || order.contains(query) || last.contains(query)
             }
@@ -266,6 +292,17 @@ class MessagePage : AppCompatActivity() {
 
         base = sortConversations(base)
         renderMessages(base)
+    }
+
+    private fun resetVisibleCount() {
+        visibleCount = pageSize
+    }
+
+    private fun loadMoreIfPossible() {
+        val total = allConversations.size
+        if (visibleCount >= total) return
+        visibleCount = kotlin.math.min(visibleCount + pageSize, total)
+        applyFilters()
     }
 
     private fun setupBottomNav() {

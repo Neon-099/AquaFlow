@@ -58,13 +58,13 @@
                 android:paddingHorizontal="8dp"
                 android:paddingVertical="4dp"
                 android:textColor="@color/text_white"
-                android:textSize="10sp"
+                android:textSize="9sp"
                 android:textStyle="bold"
                 android:fontFamily="sans-serif-medium"
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:visibility="gone"
-                tools:text="Order #2841"
+                tools:text="#ORD-000000"
                 tools:visibility="visible" />
     </LinearLayout>
 

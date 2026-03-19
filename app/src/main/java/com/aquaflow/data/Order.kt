@@ -20,17 +20,3 @@ enum class OrderStatus {
     CANCELLED
 }
 
-data class HomeOrderData(
-    val status: OrderStatus?, //NULL IF NO ACTIVE ORDER
-    val orderNumber: String,
-    val quantityText: String,
-    val arrivalTime: String,
-)
-
-//DATA CLASS FOR RECENT ACTIVITY
-data class RecentOrder(
-    val orderNumber: String,
-    val time: String,
-    val description: String
-)
-

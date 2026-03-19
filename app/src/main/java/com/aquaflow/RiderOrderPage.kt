@@ -2,6 +2,8 @@ package com.aquaflow
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
@@ -31,6 +33,22 @@ class RiderOrderPage : AppCompatActivity() {
     private val allOrders = mutableListOf<MobileOrder>()
     private var currentTab = TabType.TODO
     private var currentQuery = ""
+    private val pageSize = 12
+    private var visibleCount = pageSize
+    private val searchHandler = Handler(Looper.getMainLooper())
+    private var searchRunnable: Runnable? = null
+    private val searchDebounceMs = 350L
+
+    private val statusOrder = mapOf(
+        "PENDING" to 0,
+        "CONFIRMED" to 1,
+        "PICKED_UP" to 2,
+        "OUT_FOR_DELIVERY" to 3,
+        "DELIVERED" to 4,
+        "PENDING_PAYMENT" to 5,
+        "COMPLETED" to 6,
+        "CANCELLED" to 7
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +65,11 @@ class RiderOrderPage : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         loadOrdersFromBackend()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        searchRunnable?.let(searchHandler::removeCallbacks)
     }
 
     private fun initializeViews() {
@@ -67,6 +90,17 @@ class RiderOrderPage : AppCompatActivity() {
         )
         rvOrders.layoutManager = LinearLayoutManager(this)
         rvOrders.adapter = adapter
+        rvOrders.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                if (dy <= 0) return
+                val lm = recyclerView.layoutManager as? LinearLayoutManager ?: return
+                val lastVisible = lm.findLastVisibleItemPosition()
+                if (lastVisible >= adapter.itemCount - 3) {
+                    loadMoreIfPossible()
+                }
+            }
+        })
     }
 
     private fun setupSearch() {
@@ -74,8 +108,14 @@ class RiderOrderPage : AppCompatActivity() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
             override fun afterTextChanged(s: Editable?) {
-                currentQuery = s?.toString().orEmpty().trim()
-                applyFilters()
+                val nextQuery = s?.toString().orEmpty().trim()
+                searchRunnable?.let(searchHandler::removeCallbacks)
+                searchRunnable = Runnable {
+                    currentQuery = nextQuery
+                    resetVisibleCount()
+                    applyFilters()
+                }
+                searchHandler.postDelayed(searchRunnable!!, searchDebounceMs)
             }
         })
     }
@@ -85,6 +125,7 @@ class RiderOrderPage : AppCompatActivity() {
             override fun onTabSelected(tab: TabLayout.Tab?) {
                 currentTab = if (tab?.position == 1) TabType.COMPLETED else TabType.TODO
                 tvTodayLabel.visibility = if (currentTab == TabType.TODO) View.VISIBLE else View.GONE
+                resetVisibleCount()
                 applyFilters()
             }
 
@@ -108,6 +149,7 @@ class RiderOrderPage : AppCompatActivity() {
                     tvErrorBanner.visibility = View.GONE
                     allOrders.clear()
                     allOrders.addAll(orders)
+                    resetVisibleCount()
                     applyFilters()
                     setLoading(false)
                 }.onFailure {
@@ -120,12 +162,9 @@ class RiderOrderPage : AppCompatActivity() {
     }
 
     private fun applyFilters() {
-        val filtered = allOrders
-            .filter { matchesTab(it) }
-            .filter { matchesQuery(it, currentQuery) }
-            .sortedWith(compareBy<MobileOrder> { isTerminalStatus(it.status) }.thenBy { it.status })
-
-        val displayItems = buildDisplayItems(filtered)
+        val filtered = getFilteredOrders()
+        val visible = filtered.take(visibleCount)
+        val displayItems = buildDisplayItems(visible)
         adapter.submitList(displayItems)
         emptyStateContainer.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
         rvOrders.visibility = if (filtered.isEmpty()) View.GONE else View.VISIBLE
@@ -215,6 +254,28 @@ class RiderOrderPage : AppCompatActivity() {
     private fun isTerminalStatus(status: String): Boolean {
         val s = status.uppercase()
         return s == "COMPLETED" || s == "CANCELLED"
+    }
+
+    private fun statusRank(status: String): Int {
+        return statusOrder[status.uppercase()] ?: 999
+    }
+
+    private fun resetVisibleCount() {
+        visibleCount = pageSize
+    }
+
+    private fun loadMoreIfPossible() {
+        val filtered = getFilteredOrders()
+        if (visibleCount >= filtered.size) return
+        visibleCount = (visibleCount + pageSize).coerceAtMost(filtered.size)
+        applyFilters()
+    }
+
+    private fun getFilteredOrders(): List<MobileOrder> {
+        return allOrders
+            .filter { matchesTab(it) }
+            .filter { matchesQuery(it, currentQuery) }
+            .sortedWith(compareBy<MobileOrder> { statusRank(it.status) }.thenByDescending { it.createdAt ?: "" })
     }
 
     private fun setupBottomNav() {

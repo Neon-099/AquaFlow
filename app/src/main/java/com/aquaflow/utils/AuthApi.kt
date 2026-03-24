@@ -28,7 +28,7 @@ object AuthApi {
     private val client = OkHttpClient()
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
-    // Android emulator -> localhost mapping. Replace with LAN IP for physical devices.
+        // Android emulator -> localhost mapping. Replace with LAN IP for physical devices.
     private const val RAW_BASE_URL = "aqua-flows.onrender.com"
     private val BASE_URL = normalizeBaseUrl(RAW_BASE_URL)
 
@@ -141,12 +141,18 @@ object AuthApi {
         name: String? = null,
         address: String? = null,
         phone: String? = null,
+        currentPassword: String? = null,
+        newPassword: String? = null,
+        confirmPassword: String? = null,
         callback: (Result<AuthResult>) -> Unit
     ) {
         val body = JSONObject().apply {
             if (!name.isNullOrBlank()) put("name", name)
             if (!address.isNullOrBlank()) put("address", address)
             if (!phone.isNullOrBlank()) put("phone", phone)
+            if (!currentPassword.isNullOrBlank()) put("currentPassword", currentPassword)
+            if (!newPassword.isNullOrBlank()) put("newPassword", newPassword)
+            if (!confirmPassword.isNullOrBlank()) put("confirmPassword", confirmPassword)
         }.toString()
 
         val request = Request.Builder()
@@ -241,6 +247,30 @@ object AuthApi {
                         null
                     }
                     callback(Result.success(message))
+                }
+            }
+        })
+    }
+
+    fun logout(token: String, callback: (Result<Unit>) -> Unit) {
+        val request = Request.Builder()
+            .url("$BASE_URL/api/v1/auth/logout")
+            .post("{}".toRequestBody(jsonMediaType))
+            .header("Authorization", "Bearer $token")
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                callback(Result.failure(e))
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                response.use {
+                    if (!it.isSuccessful) {
+                        callback(Result.failure(Exception(extractMessage(it.body?.string()) ?: "Logout failed")))
+                        return
+                    }
+                    callback(Result.success(Unit))
                 }
             }
         })

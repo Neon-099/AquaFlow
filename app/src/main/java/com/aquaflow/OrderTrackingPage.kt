@@ -2,6 +2,7 @@ package com.aquaflow
 
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -13,6 +14,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.aquaflow.ui.OrderStatusBadgeMapper
 import com.aquaflow.utils.OrderApi
+import com.google.android.material.button.MaterialButton
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -30,6 +32,7 @@ class OrderTrackingPage : AppCompatActivity() {
     private lateinit var tvOrderGallonType: TextView
     private lateinit var tvOrderRiderName: TextView
     private lateinit var tvOrderRiderPhone: TextView
+    private lateinit var btnCallRider: MaterialButton
 
     private val pollHandler = Handler(Looper.getMainLooper())
     private var orderId: String = ""
@@ -102,6 +105,7 @@ class OrderTrackingPage : AppCompatActivity() {
         tvOrderGallonType = findViewById(R.id.tvOrderGallonType)
         tvOrderRiderName = findViewById(R.id.tvOrderRiderName)
         tvOrderRiderPhone = findViewById(R.id.tvOrderRiderPhone)
+        btnCallRider = findViewById(R.id.btnCallRider)
 
         btnBack.setOnClickListener { finish() }
     }
@@ -125,7 +129,15 @@ class OrderTrackingPage : AppCompatActivity() {
                     tvOrderPaymentMethod.text = formatPaymentMethod(order.paymentMethod)
                     tvOrderGallonType.text = formatGallonType(order.gallonType)
                     tvOrderRiderName.text = details.riderName?.takeIf { it.isNotBlank() } ?: "Unassigned"
-                    tvOrderRiderPhone.text = details.riderPhone?.takeIf { it.isNotBlank() } ?: "Not available"
+                    val riderPhone = details.riderPhone?.takeIf { it.isNotBlank() }
+                    tvOrderRiderPhone.text = riderPhone ?: "Not available"
+                    btnCallRider.isEnabled = !riderPhone.isNullOrBlank()
+                    btnCallRider.alpha = if (riderPhone.isNullOrBlank()) 0.5f else 1f
+                    btnCallRider.setOnClickListener {
+                        if (riderPhone.isNullOrBlank()) return@setOnClickListener
+                        val intent = android.content.Intent(android.content.Intent.ACTION_DIAL, Uri.parse("tel:$riderPhone"))
+                        startActivity(intent)
+                    }
 
                     tvArrivingIn.text = when {
                         !order.etaText.isNullOrBlank() -> "Arriving in ${order.etaText}"

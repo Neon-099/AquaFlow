@@ -149,6 +149,12 @@
                         android:id="@+id/rowPayment"
                         android:layout_width="match_parent"
                         android:layout_height="64dp" />
+
+                    <include
+                        layout="@layout/item_profile_option"
+                        android:id="@+id/rowPassword"
+                        android:layout_width="match_parent"
+                        android:layout_height="64dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

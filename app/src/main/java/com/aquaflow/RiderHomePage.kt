@@ -2,6 +2,8 @@ package com.aquaflow
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -12,6 +14,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.aquaflow.utils.MobileOrder
 import com.aquaflow.utils.OrderApi
+import com.aquaflow.utils.RiderApi
+import com.aquaflow.utils.RIDER_HEARTBEAT_INTERVAL_MS
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButton
 
@@ -44,6 +48,13 @@ class RiderHomePage : AppCompatActivity() {
     private val pageSize = 6
     private var visibleActiveCount = pageSize
     private var visibleNewCount = pageSize
+    private val heartbeatHandler = Handler(Looper.getMainLooper())
+    private val heartbeatRunnable = object : Runnable {
+        override fun run() {
+            sendHeartbeat()
+            heartbeatHandler.postDelayed(this, RIDER_HEARTBEAT_INTERVAL_MS)
+        }
+    }
 
     private val statusOrder = mapOf(
         "PENDING" to 0,
@@ -69,6 +80,12 @@ class RiderHomePage : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         loadOrdersFromBackend()
+        startHeartbeat()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        stopHeartbeat()
     }
 
     private fun initializeViews() {
@@ -119,6 +136,22 @@ class RiderHomePage : AppCompatActivity() {
         )
         rvNewOrders.layoutManager = LinearLayoutManager(this)
         rvNewOrders.adapter = newAdapter
+    }
+
+    private fun startHeartbeat() {
+        sendHeartbeat()
+        heartbeatHandler.removeCallbacks(heartbeatRunnable)
+        heartbeatHandler.postDelayed(heartbeatRunnable, RIDER_HEARTBEAT_INTERVAL_MS)
+    }
+
+    private fun stopHeartbeat() {
+        heartbeatHandler.removeCallbacks(heartbeatRunnable)
+    }
+
+    private fun sendHeartbeat() {
+        val token = getSharedPreferences("auth", MODE_PRIVATE).getString("token", null)
+        if (token.isNullOrBlank()) return
+        RiderApi.sendHeartbeat(token) { }
     }
 
     private fun loadOrdersFromBackend() {
@@ -358,6 +391,10 @@ class RiderHomePage : AppCompatActivity() {
                 R.id.navigation_home -> true
                 R.id.navigation_orders -> {
                     startActivity(Intent(this, RiderOrderPage::class.java))
+                    true
+                }
+                R.id.navigation_notifications -> {
+                    startActivity(Intent(this, NotificationPage::class.java))
                     true
                 }
                 R.id.navigation_messages -> {

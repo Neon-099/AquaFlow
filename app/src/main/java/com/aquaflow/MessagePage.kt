@@ -73,7 +73,7 @@ class MessagePage : AppCompatActivity() {
         btnFilterRiders = findViewById(R.id.btnFilterRiders)
         btnToggleArchive = findViewById(R.id.btnToggleArchive)
         tvArchiveBanner = findViewById(R.id.tvArchiveBanner)
-        val scrollView = findViewById<androidx.core.widget.NestedScrollView>(R.id.messagesContainer)?.parent as? androidx.core.widget.NestedScrollView
+        val scrollView = findViewById<androidx.core.widget.NestedScrollView>(R.id.messagesScroll)
         scrollView?.setOnScrollChangeListener { _, _, scrollY, _, _ ->
             val view = scrollView.getChildAt(0)
             if (view != null && scrollY >= (view.measuredHeight - scrollView.measuredHeight - 12)) {

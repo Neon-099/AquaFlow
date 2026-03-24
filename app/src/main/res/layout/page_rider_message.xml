@@ -142,6 +142,7 @@
     </LinearLayout>
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/messagesScroll"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:fillViewport="true"

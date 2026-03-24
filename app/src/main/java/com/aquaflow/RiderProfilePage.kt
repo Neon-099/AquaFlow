@@ -2,6 +2,8 @@ package com.aquaflow
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -12,6 +14,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import com.aquaflow.utils.AuthApi
 import com.aquaflow.utils.AuthResult
+import com.aquaflow.utils.RiderApi
+import com.aquaflow.utils.RIDER_HEARTBEAT_INTERVAL_MS
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButton
 
@@ -22,6 +26,13 @@ class RiderProfilePage : AppCompatActivity() {
     private lateinit var tvMaxCapacityValue: TextView
     private lateinit var tvCurrentLoadValue: TextView
     private lateinit var tvActiveOrdersValue: TextView
+    private val heartbeatHandler = Handler(Looper.getMainLooper())
+    private val heartbeatRunnable = object : Runnable {
+        override fun run() {
+            sendHeartbeat()
+            heartbeatHandler.postDelayed(this, RIDER_HEARTBEAT_INTERVAL_MS)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,6 +48,12 @@ class RiderProfilePage : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         loadRiderProfile()
+        startHeartbeat()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        stopHeartbeat()
     }
 
     private fun bindHeader() {
@@ -63,6 +80,22 @@ class RiderProfilePage : AppCompatActivity() {
         val cachedActive = prefs.getInt("activeOrdersCount", -1)
         tvCurrentLoadValue.text = if (cachedLoad >= 0) "$cachedLoad gal" else "Not available yet"
         tvActiveOrdersValue.text = if (cachedActive >= 0) "$cachedActive" else "Not available yet"
+    }
+
+    private fun startHeartbeat() {
+        sendHeartbeat()
+        heartbeatHandler.removeCallbacks(heartbeatRunnable)
+        heartbeatHandler.postDelayed(heartbeatRunnable, RIDER_HEARTBEAT_INTERVAL_MS)
+    }
+
+    private fun stopHeartbeat() {
+        heartbeatHandler.removeCallbacks(heartbeatRunnable)
+    }
+
+    private fun sendHeartbeat() {
+        val token = getSharedPreferences("auth", MODE_PRIVATE).getString("token", null)
+        if (token.isNullOrBlank()) return
+        RiderApi.sendHeartbeat(token) { }
     }
 
     private fun loadRiderProfile() {
@@ -151,6 +184,8 @@ class RiderProfilePage : AppCompatActivity() {
 
     private fun setupLogout() {
         findViewById<MaterialButton>(R.id.btnLogout).setOnClickListener {
+            val token = getSharedPreferences("auth", MODE_PRIVATE).getString("token", null)
+            AuthApi.logout(token ?: "") { }
             PushRegistration.unregisterCurrentToken(this) {
                 runOnUiThread {
                     val prefs = getSharedPreferences("auth", MODE_PRIVATE)
@@ -231,6 +266,10 @@ class RiderProfilePage : AppCompatActivity() {
                 }
                 R.id.navigation_messages -> {
                     startActivity(Intent(this, RiderMessagePage::class.java))
+                    true
+                }
+                R.id.navigation_notifications -> {
+                    startActivity(Intent(this, NotificationPage::class.java))
                     true
                 }
                 else -> false

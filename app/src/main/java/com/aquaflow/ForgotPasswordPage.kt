@@ -25,6 +25,7 @@ class ForgotPasswordPage : AppCompatActivity() {
     private val requestContainer by lazy { findViewById<View>(R.id.container_request) }
     private val resetContainer by lazy { findViewById<View>(R.id.container_reset) }
     private val tvResendCode by lazy { findViewById<TextView>(R.id.tv_resend_code) }
+    private val cbShowPasswords by lazy { findViewById<android.widget.CheckBox>(R.id.cb_show_reset_passwords) }
 
     private var cooldownTimer: CountDownTimer? = null
     private var cooldownSeconds = 0
@@ -42,6 +43,10 @@ class ForgotPasswordPage : AppCompatActivity() {
         btnResetPassword.setOnClickListener { handleResetPassword() }
         findViewById<TextView>(R.id.btn_back_to_login).setOnClickListener { finish() }
         tvResendCode.setOnClickListener { handleSendCode() }
+        cbShowPasswords.setOnCheckedChangeListener { _, isChecked ->
+            setPasswordVisibility(etNewPassword, isChecked)
+            setPasswordVisibility(etConfirmPassword, isChecked)
+        }
         setStepRequest()
     }
 
@@ -160,5 +165,15 @@ class ForgotPasswordPage : AppCompatActivity() {
 
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    }
+
+    private fun setPasswordVisibility(input: EditText, isVisible: Boolean) {
+        val selection = input.text?.length ?: 0
+        input.inputType = if (isVisible) {
+            android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+        } else {
+            android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        input.setSelection(selection)
     }
 }

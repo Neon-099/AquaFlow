@@ -295,6 +295,20 @@
                                     android:textColor="@color/text_primary"
                                     android:textSize="14sp"
                                     android:fontFamily="sans-serif" />
+                            <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/btnCallRider"
+                                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="40dp"
+                                    android:layout_marginTop="10dp"
+                                    android:text="Call Rider"
+                                    android:textAllCaps="false"
+                                    android:textColor="@color/primary"
+                                    android:textSize="12sp"
+                                    android:fontFamily="sans-serif-medium"
+                                    app:cornerRadius="12dp"
+                                    app:strokeColor="@color/primary"
+                                    app:strokeWidth="1dp" />
                         </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>

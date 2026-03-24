@@ -13,6 +13,11 @@
         android:title="Orders" />
 
     <item
+        android:id="@+id/navigation_notifications"
+        android:icon="@drawable/ic_notification_bell"
+        android:title="Alerts" />
+
+    <item
         android:id="@+id/navigation_messages"
         android:icon="@drawable/ic_chat"
         android:title="Messages" />

@@ -158,6 +158,12 @@ class OrderFormPage : AppCompatActivity() {
             Toast.makeText(this, "Session expired. Please log in again.", Toast.LENGTH_LONG).show()
             return
         }
+        val phone = prefs.getString("phone", null)?.trim().orEmpty()
+        if (paymentMethod == "GCASH" && phone.isBlank()) {
+            Toast.makeText(this, "Phone number is required for GCash payments. Please update your profile.", Toast.LENGTH_LONG).show()
+            startActivity(Intent(this, ProfilePage::class.java))
+            return
+        }
 
         val payload = CreateOrderPayload(
             waterQuantity = quantity,
@@ -246,6 +252,12 @@ class OrderFormPage : AppCompatActivity() {
         val token = prefs.getString("token", null)
         if (token.isNullOrBlank()) {
             Toast.makeText(this, "Session expired. Please log in again.", Toast.LENGTH_LONG).show()
+            return
+        }
+        val phone = prefs.getString("phone", null)?.trim().orEmpty()
+        if (phone.isBlank()) {
+            Toast.makeText(this, "Phone number is required for GCash payments. Please update your profile.", Toast.LENGTH_LONG).show()
+            startActivity(Intent(this, ProfilePage::class.java))
             return
         }
 

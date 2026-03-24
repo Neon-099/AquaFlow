@@ -12,6 +12,8 @@ import androidx.appcompat.app.AppCompatActivity
 import com.aquaflow.utils.ChatApi
 import com.aquaflow.utils.ChatSocket
 import com.aquaflow.utils.ConversationRow
+import com.aquaflow.utils.RiderApi
+import com.aquaflow.utils.RIDER_HEARTBEAT_INTERVAL_MS
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
@@ -39,6 +41,13 @@ class RiderMessagePage : AppCompatActivity() {
     private val searchHandler = Handler(Looper.getMainLooper())
     private var searchRunnable: Runnable? = null
     private val searchDebounceMs = 350L
+    private val heartbeatHandler = Handler(Looper.getMainLooper())
+    private val heartbeatRunnable = object : Runnable {
+        override fun run() {
+            sendHeartbeat()
+            heartbeatHandler.postDelayed(this, RIDER_HEARTBEAT_INTERVAL_MS)
+        }
+    }
     private var socket: Socket? = null
     private var myUserId: String? = null
     private val isoWithMillis = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX", Locale.US).apply {
@@ -60,7 +69,7 @@ class RiderMessagePage : AppCompatActivity() {
         btnFilterCustomers = findViewById(R.id.btnFilterCustomers)
         btnToggleArchive = findViewById(R.id.btnToggleArchive)
         tvArchiveBanner = findViewById(R.id.tvArchiveBanner)
-        val scrollView = findViewById<androidx.core.widget.NestedScrollView>(R.id.messagesContainer)?.parent as? androidx.core.widget.NestedScrollView
+        val scrollView = findViewById<androidx.core.widget.NestedScrollView>(R.id.messagesScroll)
         scrollView?.setOnScrollChangeListener { _, _, scrollY, _, _ ->
             val view = scrollView.getChildAt(0)
             if (view != null && scrollY >= (view.measuredHeight - scrollView.measuredHeight - 12)) {
@@ -77,6 +86,12 @@ class RiderMessagePage : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         loadConversations()
+        startHeartbeat()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        stopHeartbeat()
     }
 
     override fun onDestroy() {
@@ -84,6 +99,22 @@ class RiderMessagePage : AppCompatActivity() {
         socket?.disconnect()
         socket = null
         searchRunnable?.let(searchHandler::removeCallbacks)
+    }
+
+    private fun startHeartbeat() {
+        sendHeartbeat()
+        heartbeatHandler.removeCallbacks(heartbeatRunnable)
+        heartbeatHandler.postDelayed(heartbeatRunnable, RIDER_HEARTBEAT_INTERVAL_MS)
+    }
+
+    private fun stopHeartbeat() {
+        heartbeatHandler.removeCallbacks(heartbeatRunnable)
+    }
+
+    private fun sendHeartbeat() {
+        val token = getSharedPreferences("auth", MODE_PRIVATE).getString("token", null)
+        if (token.isNullOrBlank()) return
+        RiderApi.sendHeartbeat(token) { }
     }
 
     private fun loadConversations() {
@@ -300,6 +331,9 @@ class RiderMessagePage : AppCompatActivity() {
                 R.id.navigation_messages -> true
                 R.id.navigation_orders -> {
                     startActivity(Intent(this, RiderOrderPage::class.java)); true
+                }
+                R.id.navigation_notifications -> {
+                    startActivity(Intent(this, NotificationPage::class.java)); true
                 }
                 R.id.navigation_profile -> {
                     startActivity(Intent(this, RiderProfilePage::class.java)); true

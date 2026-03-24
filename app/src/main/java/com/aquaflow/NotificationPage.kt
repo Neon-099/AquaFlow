@@ -229,6 +229,32 @@ class NotificationPage : AppCompatActivity() {
 
     private fun setupBottomNav() {
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
+        val role = getSharedPreferences("auth", MODE_PRIVATE).getString("role", null)?.lowercase()
+        if (role == "rider") {
+            bottomNav.menu.clear()
+            bottomNav.inflateMenu(R.menu.bottom_nav_rider_menu)
+            bottomNav.selectedItemId = R.id.navigation_notifications
+            bottomNav.setOnItemSelectedListener { item ->
+                when (item.itemId) {
+                    R.id.navigation_notifications -> true
+                    R.id.navigation_home -> {
+                        startActivity(Intent(this, RiderHomePage::class.java)); true
+                    }
+                    R.id.navigation_orders -> {
+                        startActivity(Intent(this, RiderOrderPage::class.java)); true
+                    }
+                    R.id.navigation_messages -> {
+                        startActivity(Intent(this, RiderMessagePage::class.java)); true
+                    }
+                    R.id.navigation_profile -> {
+                        startActivity(Intent(this, RiderProfilePage::class.java)); true
+                    }
+                    else -> false
+                }
+            }
+            return
+        }
+
         bottomNav.selectedItemId = R.id.navigation_notifications
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {

@@ -8,6 +8,9 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import android.app.Dialog
+import android.widget.EditText
+import android.widget.CheckBox
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.aquaflow.utils.AuthApi
@@ -97,6 +100,14 @@ class ProfilePage : AppCompatActivity() {
             iconRes = R.drawable.ic_profile_mail
         ) {
             showPaymentMethodDialog()
+        }
+
+        configureRow(
+            rowId = R.id.rowPassword,
+            label = "Change Password",
+            iconRes = R.drawable.ic_lock
+        ) {
+            showChangePasswordDialog()
         }
 
         // Notifications
@@ -357,6 +368,116 @@ class ProfilePage : AppCompatActivity() {
             .show()
     }
 
+    private fun showChangePasswordDialog() {
+        val dialog = Dialog(this)
+        dialog.setContentView(R.layout.dialog_change_password)
+
+        val currentInput = dialog.findViewById<EditText>(R.id.inputCurrentPassword)
+        val resetCodeInput = dialog.findViewById<EditText>(R.id.inputResetCode)
+        val newInput = dialog.findViewById<EditText>(R.id.inputNewPassword)
+        val confirmInput = dialog.findViewById<EditText>(R.id.inputConfirmPassword)
+        val cbShowPasswords = dialog.findViewById<CheckBox>(R.id.cbShowPasswords)
+        val btnSendCode = dialog.findViewById<TextView>(R.id.btnSendCode)
+        val btnToggleMode = dialog.findViewById<TextView>(R.id.btnToggleMode)
+        val btnSubmit = dialog.findViewById<TextView>(R.id.btnSubmit)
+        val btnCancel = dialog.findViewById<TextView>(R.id.btnCancel)
+
+        var mode = "current"
+        val strongPassword = Regex("^(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,}$")
+
+        fun applyMode(nextMode: String) {
+            mode = nextMode
+            val isReset = mode == "reset"
+            currentInput.visibility = if (isReset) View.GONE else View.VISIBLE
+            resetCodeInput.visibility = if (isReset) View.VISIBLE else View.GONE
+            btnSendCode.visibility = if (isReset) View.VISIBLE else View.GONE
+            btnToggleMode.text = if (isReset) "Use current password" else "Forgot password?"
+            btnSubmit.text = if (isReset) "Reset Password" else "Update Password"
+        }
+
+        btnToggleMode.setOnClickListener {
+            applyMode(if (mode == "current") "reset" else "current")
+        }
+
+        cbShowPasswords?.setOnCheckedChangeListener { _, isChecked ->
+            setPasswordVisibility(currentInput, isChecked)
+            setPasswordVisibility(newInput, isChecked)
+            setPasswordVisibility(confirmInput, isChecked)
+        }
+
+        btnSendCode.setOnClickListener {
+            val email = getSharedPreferences("auth", MODE_PRIVATE).getString("email", null)?.trim().orEmpty()
+            if (email.isBlank()) {
+                Toast.makeText(this, "Missing email for password reset.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            AuthApi.forgotPassword(email) { result ->
+                runOnUiThread {
+                    result.onSuccess {
+                        Toast.makeText(this, it ?: "Reset code sent.", Toast.LENGTH_SHORT).show()
+                    }.onFailure { err ->
+                        Toast.makeText(this, err.message ?: "Could not send reset email.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+
+        btnSubmit.setOnClickListener {
+            val next = newInput.text.toString().trim()
+            val confirm = confirmInput.text.toString().trim()
+
+            if (!strongPassword.containsMatchIn(next)) {
+                Toast.makeText(this, "Password must have 1 uppercase, 1 number, and 1 special character", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            if (next != confirm) {
+                Toast.makeText(this, "Passwords do not match", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            if (mode == "current") {
+                val current = currentInput.text.toString().trim()
+                if (current.isBlank()) {
+                    Toast.makeText(this, "Enter your current password", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                updateProfile(currentPassword = current, newPassword = next, confirmPassword = confirm)
+                dialog.dismiss()
+                return@setOnClickListener
+            }
+
+            val code = resetCodeInput.text.toString().trim()
+            if (code.isBlank()) {
+                Toast.makeText(this, "Reset code is required", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            AuthApi.resetPassword(code, next) { result ->
+                runOnUiThread {
+                    result.onSuccess {
+                        Toast.makeText(this, it ?: "Password reset successful.", Toast.LENGTH_SHORT).show()
+                        dialog.dismiss()
+                    }.onFailure { err ->
+                        Toast.makeText(this, err.message ?: "Reset failed.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+
+        btnCancel.setOnClickListener { dialog.dismiss() }
+        applyMode("current")
+        dialog.show()
+    }
+
+    private fun setPasswordVisibility(input: EditText, isVisible: Boolean) {
+        val selection = input.text?.length ?: 0
+        input.inputType = if (isVisible) {
+            android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+        } else {
+            android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        input.setSelection(selection)
+    }
+
     private fun showNotificationSettingsDialog() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
 
@@ -406,10 +527,25 @@ class ProfilePage : AppCompatActivity() {
         return initials.ifBlank { "CF" }
     }
 
-    private fun updateProfile(name: String? = null, address: String? = null, phone: String? = null) {
+    private fun updateProfile(
+        name: String? = null,
+        address: String? = null,
+        phone: String? = null,
+        currentPassword: String? = null,
+        newPassword: String? = null,
+        confirmPassword: String? = null
+    ) {
         val token = getSharedPreferences("auth", MODE_PRIVATE).getString("token", null)
         if (token.isNullOrBlank()) return
-        AuthApi.updateProfile(token, name, address, phone) { result ->
+        AuthApi.updateProfile(
+            token,
+            name,
+            address,
+            phone,
+            currentPassword,
+            newPassword,
+            confirmPassword
+        ) { result ->
             runOnUiThread {
                 result.onSuccess { auth ->
                     applyAuthToUi(auth)

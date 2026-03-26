@@ -24,11 +24,11 @@ data class AuthResult(
     val activeOrdersCount: Int? = null
 )
 
+
 object AuthApi {
     private val client = OkHttpClient()
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
-
-        // Android emulator -> localhost mapping. Replace with LAN IP for physical devices.
+    // Android emulator -> localhost mapping. Replace with LAN IP for physical devices.
     private const val RAW_BASE_URL = "aqua-flows.onrender.com"
     private val BASE_URL = normalizeBaseUrl(RAW_BASE_URL)
 

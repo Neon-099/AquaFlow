@@ -157,7 +157,7 @@ class RiderProfilePage : AppCompatActivity() {
             label = "Notifications",
             iconRes = R.drawable.ic_profile_notifications
         ) {
-            showNotificationSettingsDialog()
+            startActivity(Intent(this, NotificationPage::class.java))
         }
 
         configureRow(
